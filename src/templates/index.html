@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Immich Album Manager</title>
+
+    <style>
+
+        body{
+            font-family:Arial;
+            margin:40px;
+            background:#f4f4f4;
+        }
+
+        .card{
+            background:white;
+            padding:20px;
+            border-radius:10px;
+            width:900px;
+            box-shadow:0 0 10px #bbb;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        td{
+            padding:8px;
+        }
+
+        input[type=text]{
+            width:100%;
+            padding:8px;
+        }
+
+        button{
+
+            padding:10px 20px;
+
+            margin-top:15px;
+
+            cursor:pointer;
+
+        }
+
+        .rootrow{
+
+            margin-top:8px;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Immich Album Manager</h2>
+
+<form action="/save" method="post">
+
+<table>
+
+<tr>
+
+<td width="180">
+
+Immich API
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="immich_url"
+value="{{ config.immich_url }}">
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+API Key
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="api_key"
+value="{{ config.api_key }}">
+
+</td>
+
+</tr>
+
+</table>
+
+<hr>
+
+<h3>Album-Wurzeln</h3>
+
+<div id="roots">
+
+{% for root in config.album_roots %}
+
+<div class="rootrow">
+
+<input
+type="text"
+name="root{{ loop.index0 }}"
+value="{{ root.path }}">
+
+</div>
+
+{% endfor %}
+
+{% if config.album_roots|length == 0 %}
+
+<div class="rootrow">
+
+<input
+type="text"
+name="root0"
+placeholder="/external/Familie">
+
+</div>
+
+{% endif %}
+
+</div>
+
+<br>
+
+<button
+type="button"
+onclick="addRoot()">
+
+Weitere Wurzel
+
+</button>
+
+<br>
+
+<button
+type="submit">
+
+Speichern
+
+</button>
+
+<a href="/scan">
+
+<button
+type="button">
+
+Ordner anzeigen
+
+</button>
+
+</a>
+
+</form>
+
+</div>
+
+<script>
+
+let counter={{ config.album_roots|length }};
+
+if(counter==0)
+    counter=1;
+
+function addRoot(){
+
+    let div=document.createElement("div");
+
+    div.className="rootrow";
+
+    div.innerHTML="<input type='text' name='root"+counter+"' placeholder='/external/...'>";
+
+    document.getElementById("roots").appendChild(div);
+
+    counter++;
+
+}
+
+</script>
+
+</body>
+
+</html>

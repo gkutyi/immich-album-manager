@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Ordner scannen</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#f4f4f4;
+    margin:40px;
+}
+
+.card{
+
+    background:white;
+
+    padding:20px;
+
+    border-radius:10px;
+
+    box-shadow:0 0 10px #bbb;
+
+}
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+th,td{
+
+    border-bottom:1px solid #ddd;
+
+    padding:10px;
+
+    text-align:left;
+
+}
+
+th{
+
+    background:#efefef;
+
+}
+
+button{
+
+    padding:10px 18px;
+
+    margin-top:15px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Gefundene Albumordner</h2>
+
+<p>
+
+Folgende Ordner wurden gefunden.
+
+In der nächsten Phase werden hier zusätzlich die Anzahl der Medien sowie
+der Status in Immich angezeigt.
+
+</p>
+
+<table>
+
+<tr>
+
+<th>Album</th>
+
+<th>Pfad</th>
+
+</tr>
+
+{% for folder in folders %}
+
+<tr>
+
+<td>
+
+{{ folder.name }}
+
+</td>
+
+<td>
+
+{{ folder.path }}
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br>
+
+<a href="/">
+
+<button>
+
+Zurück
+
+</button>
+
+</a>
+
+</div>
+
+</body>
+
+</html>

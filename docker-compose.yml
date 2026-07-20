@@ -1,0 +1,23 @@
+services:
+  album-manager:
+    build: .
+    container_name: immich_album_manager
+
+    ports:
+      - "5055:5050"
+
+    volumes:
+      - ./config:/config
+      - ./logs:/logs
+      - /share/Multimedia:/external:ro
+
+    restart: unless-stopped
+
+    networks:
+      - default
+      - immich
+
+networks:
+  immich:
+    external: true
+    name: immich_default

@@ -1,0 +1,20 @@
+{
+    "library": "/external",
+    "albumRoots": [
+        "Familie",
+        "Reisen",
+        "Veranstaltungen"
+    ],
+    "immich_url": "http://immich_server:2283/",
+    "api_key": "bRipCcFLBwDrqt6UE0KgCH1vSMWjBeVfrbRIYbz69k",
+    "album_roots": [
+        {
+            "path": "/external/Bilder/Schule-G\u00fcnther",
+            "recursive": true
+        },
+        {
+            "path": "/external/Bilder/Theater",
+            "recursive": true
+        }
+    ]
+}
