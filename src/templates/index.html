@@ -1,63 +1,20 @@
 <!DOCTYPE html>
 <html lang="de">
-
 <head>
+    
 
-    <meta charset="UTF-8">
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}">
+      
+<meta charset="UTF-8">
 
-    <title>Immich Album Manager</title>
-
-    <style>
-
-        body{
-            font-family:Arial;
-            margin:40px;
-            background:#f4f4f4;
-        }
-
-        .card{
-            background:white;
-            padding:20px;
-            border-radius:10px;
-            width:900px;
-            box-shadow:0 0 10px #bbb;
-        }
-
-        table{
-            width:100%;
-            border-collapse:collapse;
-        }
-
-        td{
-            padding:8px;
-        }
-
-        input[type=text]{
-            width:100%;
-            padding:8px;
-        }
-
-        button{
-
-            padding:10px 20px;
-
-            margin-top:15px;
-
-            cursor:pointer;
-
-        }
-
-        .rootrow{
-
-            margin-top:8px;
-
-        }
-
-    </style>
+<title>Immich Album Manager</title>
 
 </head>
 
 <body>
+    
+{% include "_menu.html" %}
 
 <div class="card">
 
@@ -65,93 +22,100 @@
 
 <form action="/save" method="post">
 
+<h3>Immich</h3>
+
 <table>
 
 <tr>
-
-<td width="180">
-
-Immich API
-
-</td>
-
+<td width="180">Server</td>
 <td>
-
 <input
 type="text"
 name="immich_url"
-value="{{ config.immich_url }}">
-
+value="{{ config.immich.url }}">
 </td>
-
 </tr>
 
 <tr>
-
+<td>API Key</td>
 <td>
-
-API Key
-
-</td>
-
-<td>
-
 <input
 type="text"
 name="api_key"
-value="{{ config.api_key }}">
-
+value="{{ config.immich.api_key }}">
 </td>
-
 </tr>
 
 </table>
 
 <hr>
 
-<h3>Album-Wurzeln</h3>
+<h3>Album-Regeln</h3>
 
-<div id="roots">
+<table id="ruletable">
+
+<tr>
+<th>Aktiv</th>
+<th>Ordner</th>
+<th>Regel</th>
+</tr>
 
 {% for root in config.album_roots %}
 
-<div class="rootrow">
+<tr>
+
+<td align="center">
+
+<input
+type="checkbox"
+name="enabled{{ loop.index0 }}"
+{% if root.enabled %}checked{% endif %}>
+
+</td>
+
+<td>
 
 <input
 type="text"
-name="root{{ loop.index0 }}"
+name="path{{ loop.index0 }}"
 value="{{ root.path }}">
 
-</div>
+</td>
+
+<td>
+
+<select
+name="mode{{ loop.index0 }}">
+
+<option value="children"
+{% if root.mode=="children" %}selected{% endif %}>
+children
+</option>
+
+<option value="years"
+{% if root.mode=="years" %}selected{% endif %}>
+years
+</option>
+
+</select>
+
+</td>
+
+</tr>
 
 {% endfor %}
 
-{% if config.album_roots|length == 0 %}
-
-<div class="rootrow">
-
-<input
-type="text"
-name="root0"
-placeholder="/external/Familie">
-
-</div>
-
-{% endif %}
-
-</div>
-
-<br>
+</table>
 
 <button
 type="button"
-onclick="addRoot()">
+onclick="addRule()">
 
-Weitere Wurzel
+Neue Regel
 
 </button>
 
-<br>
+<br><br>
 
 <button
 type="submit">
@@ -160,16 +124,105 @@ Speichern
 
 </button>
 
-<a href="/scan">
-
 <button
-type="button">
+type="button"
+onclick="location.href='/scan'">
 
 Ordner anzeigen
 
 </button>
 
+<button
+type="button"
+onclick="location.href='/test'">
+
+Immich testen
+
+</button>
+
+<hr>
+
+<h3>Synchronisationsberichte</h3>
+
+{% if last_report_exists %}
+
+<p>
+
+<a
+    class="button"
+    href="/report/last_sync_report.html">
+
+    Letzten Bericht anzeigen
+
 </a>
+
+</p>
+
+{% else %}
+
+<p>
+Noch kein Synchronisationsbericht vorhanden.
+</p>
+
+{% endif %}
+
+
+{% if reports %}
+
+<h4>Letzte 3 Berichte</h4>
+
+<table>
+
+<tr>
+    <th>Datum</th>
+    <th>Bericht</th>
+</tr>
+
+{% for report in reports %}
+
+<tr>
+
+<td>
+    {{ report.display }}
+</td>
+
+<td>
+
+<a href="/report/{{ report.file }}">
+    {{ report.file }}
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endif %}
+
+
+<p>
+
+<a
+    class="button"
+    href="/reports">
+
+    Alle Berichte
+
+</a>
+
+<a
+    class="button"
+    href="/cleanup_reports"
+    onclick="return confirm('Alle historischen Berichte außer den letzten 3 löschen?');">
+
+    Alte Berichte löschen
+
+</a>
+
+</p>
 
 </form>
 
@@ -179,18 +232,48 @@ Ordner anzeigen
 
 let counter={{ config.album_roots|length }};
 
-if(counter==0)
-    counter=1;
+function addRule(){
 
-function addRoot(){
+    const table=document.getElementById("ruletable");
 
-    let div=document.createElement("div");
+    const row=table.insertRow(-1);
 
-    div.className="rootrow";
+    row.innerHTML=`
 
-    div.innerHTML="<input type='text' name='root"+counter+"' placeholder='/external/...'>";
+<td align="center">
+<input
+type="checkbox"
+name="enabled${counter}"
+checked>
+</td>
 
-    document.getElementById("roots").appendChild(div);
+<td>
+
+<input
+type="text"
+name="path${counter}"
+placeholder="Bilder/Reisen">
+
+</td>
+
+<td>
+
+<select
+name="mode${counter}">
+
+<option value="children">
+children
+</option>
+
+<option value="years">
+years
+</option>
+
+</select>
+
+</td>
+
+`;
 
     counter++;
 
@@ -198,6 +281,7 @@ function addRoot(){
 
 </script>
 
-</body>
+{% include "_footer.html" %}
 
+</body>
 </html>

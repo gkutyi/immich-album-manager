@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+<meta charset="UTF-8">
+
+<title>Synchronisation</title>
+
+</head>
+
+<body>
+    
+{% include "_menu.html" %}
+
+<div class="card">
+
+<h2>Synchronisation abgeschlossen</h2>
+
+<p class="ok">
+
+{{ created }} neue Alben wurden angelegt.
+
+</p>
+
+<table border="1"
+       cellpadding="6"
+       cellspacing="0"
+       width="100%">
+
+<tr>
+
+<th>Album</th>
+<th>Status</th>
+
+</tr>
+
+{% for album in albums %}
+
+<tr>
+
+<td>
+
+{{ album.album }}
+
+{% if album.year %}
+
+({{ album.year }})
+
+{% endif %}
+
+</td>
+
+<td>
+
+{% if album.exists %}
+
+Vorhanden
+
+{% else %}
+
+Nicht vorhanden
+
+{% endif %}
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br>
+
+<a href="/">Zurück</a>
+
+</div>
+
+{% include "_footer.html" %}
+
+</body>
+
+</html>

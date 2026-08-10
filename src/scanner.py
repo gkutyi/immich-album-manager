@@ -1,82 +1,223 @@
 import os
 
+from rules import (
+    is_system_folder,
+    is_excluded,
+    is_year_folder,
+    is_day_folder,
+)
+                    
+from album_rules import AlbumRules
 
-class Scanner:
+IMAGE_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".bmp",
+    ".tif",
+    ".tiff",
+    ".heic",
+    ".webp",
+}
 
-    IMAGE_EXTENSIONS = {
-        ".jpg", ".jpeg", ".png", ".gif",
-        ".bmp", ".tif", ".tiff",
-        ".webp", ".heic", ".heif",
-        ".dng", ".cr2", ".cr3",
-        ".nef", ".arw", ".rw2", ".orf"
-    }
+VIDEO_EXTENSIONS = {
+    ".mp4",
+    ".mov",
+    ".avi",
+    ".mkv",
+    ".mts",
+    ".m2ts",
+    ".3gp",
+    ".wmv",
+}
 
-    VIDEO_EXTENSIONS = {
-        ".mp4", ".mov", ".avi",
-        ".mkv", ".mts", ".m2ts",
-        ".wmv", ".mpg", ".mpeg",
-        ".3gp"
-    }
 
-    IGNORE_DIRS = {
-        ".@__thumb",
-        "@eaDir",
-        "@Recycle",
-        "@Recently-Snapshot",
-        "iPod Photo Cache"
-    }
+class AlbumScanner:
 
+    def __init__(self, excludes=None):
+
+        self.excludes = excludes or []
+
+        self.albums = []
+        
+        #
+        # Asset-Cache
+        #
+
+        self.asset_index = {}
+        
+    def set_asset_index(self, index):
+        """
+        Übergibt den geladenen Asset-Cache.
+    
+        index:
+            originalPath -> Asset-ID
+        """
+
+        self.asset_index = index or {}
+        
     def scan(self, roots):
 
-        folders = []
+        self.albums = []
 
         for root in roots:
 
-            base = root["path"]
-
-            if not os.path.isdir(base):
+            if not root.get("enabled", True):
                 continue
 
-            for name in sorted(os.listdir(base)):
+            path = root["path"]
 
-                if name in self.IGNORE_DIRS:
-                    continue
+            if not os.path.isdir(path):
+                continue
 
-                full = os.path.join(base, name)
+            self.scan_root(path)
 
-                if not os.path.isdir(full):
-                    continue
+        return self.albums
+        
+    def scan_root(self, root):
 
-                images, videos = self.count_media(full)
+        for entry in sorted(os.listdir(root)):
 
-                folders.append({
-                    "name": name,
-                    "path": full,
-                    "images": images,
-                    "videos": videos,
-                    "total": images + videos
-                })
+            if is_system_folder(entry):
+                continue
 
-        return folders
+            if is_excluded(entry, self.excludes):
+                continue
 
-    def count_media(self, folder):
+            full = os.path.join(root, entry)
+
+            if not os.path.isdir(full):
+                continue
+
+            #
+            # Jahresordner?
+            #
+
+            if is_year_folder(entry):
+
+                self.scan_year(root, full, entry)
+
+            else:
+
+                self.add_album(
+                    album=entry,
+                    path=full,
+                    year=None,
+                    mode="DIRECT",
+                )
+
+    def scan_year(self, root, year_path, year):
+
+        for entry in sorted(os.listdir(year_path)):
+
+            if is_system_folder(entry):
+                continue
+
+            if is_day_folder(entry):
+                continue
+
+            full = os.path.join(year_path, entry)
+
+            if not os.path.isdir(full):
+                continue
+
+            self.add_album(
+                album=entry,
+                path=full,
+                year=year,
+                mode="YEAR",
+            )
+            
+    def add_album(
+        self,
+        album,
+        path,
+        year,
+        mode,
+    ):
 
         images = 0
         videos = 0
+        asset_ids = []
+        cache_hits = 0
+        cache_misses = 0
 
-        for root, dirs, files in os.walk(folder):
+        for root, dirs, files in os.walk(path):
 
-            # QNAP-Systemordner ignorieren
-            dirs[:] = [d for d in dirs if d not in self.IGNORE_DIRS]
+            #
+            # Systemordner überspringen
+            #
+
+            dirs[:] = [
+                d
+                for d in dirs
+                if not is_system_folder(d)
+            ]
 
             for file in files:
 
                 ext = os.path.splitext(file)[1].lower()
 
-                if ext in self.IMAGE_EXTENSIONS:
+                #
+                # Nur echte Assets berücksichtigen
+                #
+                if ext not in IMAGE_EXTENSIONS and ext not in VIDEO_EXTENSIONS:
+                    continue
+
+                full_path = os.path.join(root, file)
+
+                asset_id = self.asset_index.get(full_path)
+
+                if asset_id:
+                    asset_ids.append(asset_id)
+                    cache_hits += 1
+                else:
+                    cache_misses += 1
+
+                if ext in IMAGE_EXTENSIONS:
                     images += 1
-
-                elif ext in self.VIDEO_EXTENSIONS:
+                else:
                     videos += 1
+        
+        #
+        # Regel für dieses Album laden
+        #
+        
+        rule = AlbumRules.get(album)
+                    
+        self.albums.append({
 
-        return images, videos
+            "album": album,
+
+            "year": year,
+
+            "mode": mode,
+
+            "path": path,
+
+            "images": images,
+
+            "videos": videos,
+
+            "total": images + videos,
+
+            #
+            # wird später von album_sync.py ergänzt
+            #
+
+            "exists": False,
+
+            "create": True,
+
+            "update": False,
+
+            "asset_ids": asset_ids,
+
+            "cache_hits": cache_hits,
+
+            "cache_misses": cache_misses,
+            
+            "rule": rule,
+
+        })

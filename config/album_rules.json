@@ -1,0 +1,440 @@
+{
+  "Africa": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Amalfi-Küste": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Amerika": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Andalusien": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Apulien": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Barcelona": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Bayerische-Königsschlösser_20221017-1020": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Bretagne": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Burgund-Elsass-Schwarzwald_19950407-0413": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "China": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Douro-Flusskreuzfahrt_20250915-25": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Dresden": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Flandern": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Florida_19861227-19870106": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Gardasee1": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Gardasee2": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Hamburg": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Indien-Julia": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Indien-Srilanka-Sophie-Julia_2018": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Indonesien_19860811-28": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Ingolstadt-Passau_KW": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Israel_19881225-19890108": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Kalabrien": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Karibik_19940724-0815": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Karibik_20260121-0214": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Korfu": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Korsika": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Kos": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Kroatien-Tucepi1": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Kroatien-Tucepi2": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Kroatien-Umag": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Kroatien_Medulin": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Kuba": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "London 19860708-11": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Madeira": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Mailand": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Mallorca1": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Mallorca2": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Marokko_19891229-19900105": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Mexiko-Yukatan_19871225-19880105": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Mexiko_19870705-19": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Mittelmeerkreuzfahrt": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Montenegro": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Niederlande": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Paris-Firmausflug-Martin": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Portugal": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Provence": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Rom": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "SanTorini": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Scan": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Schottland": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Schweden": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Singapur-Malaysia-Borneo_19890715-0803": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Sizilien": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Skyros": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Spanien20260424-0602": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Sri-Lanka_19900722-1208": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Srilanka": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Südafrika": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Südtirol-Welschofen": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Thailand_19880806-30": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Toskana1": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Toskana_19940326-0331": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Tunesien_19901227-19910103": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Türkei-Istanbul-Städte-der-Ägeis": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Türkei-Marmaris_19880707-26": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Venedig1": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Venedig2": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Venezuela_19910718-0801": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Vietnam": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Zakynthos": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Zypern_20230305-1903": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  },
+  "Ägypten_19851225-19860106": {
+    "auto_add": false,
+    "allow_delete": false,
+    "allow_rename": true,
+    "auto_update": true
+  }
+}

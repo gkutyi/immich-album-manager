@@ -1,0 +1,203 @@
+body {
+
+    font-family: Arial, sans-serif;
+
+    margin: 0;
+
+    background: #eef1f5;
+
+    color: #222;
+
+}
+
+
+/* =========================
+   Menü
+   ========================= */
+
+.main-menu {
+
+    background: #263238;
+
+    color: white;
+
+    padding: 0 30px;
+
+    min-height: 60px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+}
+
+
+.menu-title {
+
+    font-size: 21px;
+
+    font-weight: bold;
+
+}
+
+
+.menu-links {
+
+    display: flex;
+
+    gap: 10px;
+
+}
+
+
+.menu-links a {
+
+    color: white;
+
+    text-decoration: none;
+
+    padding: 10px 15px;
+
+    border-radius: 5px;
+
+}
+
+
+.menu-links a:hover {
+
+    background: #455a64;
+
+}
+
+
+/* =========================
+   Inhalt
+   ========================= */
+
+.page {
+
+    max-width: 1200px;
+
+    margin: 30px auto;
+
+    padding: 0 20px;
+
+}
+
+
+.card {
+
+    background: white;
+
+    padding: 25px;
+
+    border-radius: 10px;
+
+    box-shadow: 0 2px 8px #bbb;
+
+}
+
+
+/* =========================
+   Tabellen
+   ========================= */
+
+table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+}
+
+
+th,
+td {
+
+    padding: 8px;
+
+    border-bottom: 1px solid #ddd;
+
+}
+
+
+th {
+
+    background: #e9edf2;
+
+}
+
+
+/* =========================
+   Buttons
+   ========================= */
+
+.button {
+
+    display: inline-block;
+
+    padding: 10px 18px;
+
+    margin-top: 10px;
+
+    background: #1976d2;
+
+    color: white;
+
+    text-decoration: none;
+
+    border-radius: 6px;
+
+    border: none;
+
+}
+
+
+.button:hover {
+
+    background: #125ca5;
+
+}
+
+
+/* =========================
+   Reports
+   ========================= */
+
+.report-list {
+
+    margin-top: 10px;
+
+}
+
+
+.report-list a {
+
+    display: block;
+
+    padding: 7px 0;
+
+    color: #1565c0;
+
+}
+
+
+/* =========================
+   Footer
+   ========================= */
+
+.footer {
+
+    text-align: center;
+
+    color: #666;
+
+    font-size: 13px;
+
+    padding: 25px;
+
+    margin-top: 40px;
+
+}

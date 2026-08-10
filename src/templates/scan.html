@@ -2,107 +2,213 @@
 <html lang="de">
 
 <head>
+    
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
 
 <meta charset="UTF-8">
 
-<title>Ordner scannen</title>
-
-<style>
-
-body{
-    font-family:Arial;
-    background:#f4f4f4;
-    margin:40px;
-}
-
-.card{
-
-    background:white;
-
-    padding:20px;
-
-    border-radius:10px;
-
-    box-shadow:0 0 10px #bbb;
-
-}
-
-table{
-
-    width:100%;
-
-    border-collapse:collapse;
-
-}
-
-th,td{
-
-    border-bottom:1px solid #ddd;
-
-    padding:10px;
-
-    text-align:left;
-
-}
-
-th{
-
-    background:#efefef;
-
-}
-
-button{
-
-    padding:10px 18px;
-
-    margin-top:15px;
-
-}
-
-</style>
+<title>Albumvorschau</title>
 
 </head>
 
 <body>
+    
+{% include "_menu.html" %}
 
 <div class="card">
 
-<h2>Gefundene Albumordner</h2>
+<h2>Albumvorschau</h2>
 
-<p>
+{% set vorhanden = albums|selectattr("exists")|list|length %}
+{% set neu = albums|selectattr("create")|list|length %}
+{% set update = albums|selectattr("update")|list|length %}
 
-Folgende Ordner wurden gefunden.
+{% if immich_ok %}
+<p class="ok">✓ Verbindung zu Immich erfolgreich.</p>
+{% else %}
+<p class="error">✗ Verbindung zu Immich fehlgeschlagen.</p>
+{% endif %}
 
-In der nächsten Phase werden hier zusätzlich die Anzahl der Medien sowie
-der Status in Immich angezeigt.
+<hr>
+
+<h3>Asset-Cache</h3>
+
+{% if cache_exists %}
+
+<p style="color:green;font-weight:bold;">
+
+✓ Asset-Cache vorhanden
 
 </p>
+
+<table style="width:auto;border:0">
+
+<tr>
+<td><b>Assets</b></td>
+<td>{{ cache_info.assets }}</td>
+</tr>
+
+<tr>
+<td><b>Erstellt</b></td>
+<td>{{ cache_info.created }}</td>
+</tr>
+
+<tr>
+<td><b>Dateigröße</b></td>
+<td>{{ cache_info.size }}</td>
+</tr>
+
+</table>
+
+<a
+class="button"
+href="/build_cache"
+style="background:#f57c00;">
+
+Cache neu erzeugen
+
+</a>
+
+{% else %}
+
+<p style="color:#c00000;font-weight:bold;">
+
+Kein Asset-Cache vorhanden.
+
+</p>
+
+<a
+class="button"
+href="/build_cache">
+
+Asset-Cache erzeugen
+
+</a>
+
+{% endif %}
+
+<hr>
+
+<div style="margin:20px 0;padding:15px;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;">
+
+<table style="width:100%;border:0;">
+
+<tr>
+
+<td><b>Gefundene Alben</b></td>
+<td>{{ albums|length }}</td>
+
+<td><b>Vorhanden</b></td>
+<td style="color:green">{{ vorhanden }}</td>
+
+<td><b>Neu</b></td>
+<td style="color:orange">{{ neu }}</td>
+
+<td><b>Update</b></td>
+<td style="color:blue">{{ update }}</td>
+
+</tr>
+
+</table>
+
+</div>
 
 <table>
 
 <tr>
-
-<th>Album</th>
-
-<th>Pfad</th>
-
+    <th>Status</th>
+    <th>Album</th>
+    <th>Auto</th>
+    <th>Bilder</th>
+    <th>Videos</th>
+    <th>Gesamt</th>
+    <th>Cache</th>
+    <th>Fehlend</th>
+    <th>Assets</th>
+    <th>Pfad</th>
 </tr>
 
-{% for folder in folders %}
+{% for album in albums %}
 
 <tr>
+    
+<td>
+
+{% if album.exists %}
+
+<span style="color:green;font-weight:bold;">Vorhanden</span>
+
+{% elif album.create %}
+
+<span style="color:orange;font-weight:bold;">Neu</span>
+
+{% else %}
+
+<span style="color:blue;font-weight:bold;">Update</span>
+
+{% endif %}
+
+</td>
+
+<td>
+<strong>{{ album.album }}</strong>
+{% if album.year %}
+<br>
+<small>{{ album.year }}</small>
+{% endif %}
+</td>
+
+<td class="center">
+
+<input
+    type="checkbox"
+    class="auto_add"
+    data-album="{{ album.album }}"
+    {% if album.rule.auto_add %}checked{% endif %}>
+
+</td>
+
+<td>{{ album.images }}</td>
+
+<td>{{ album.videos }}</td>
+
+<td>{{ album.total }}</td>
 
 <td>
 
-{{ folder.name }}
+{{ album.cache_hits }}
 
 </td>
 
 <td>
 
-{{ folder.path }}
+{% if not album.rule.auto_add %}
+
+<span style="color:#888;">
+{{ album.missing }} (manuell)
+</span>
+
+{% elif album.missing == 0 %}
+
+<span style="color:green;">
+{{ album.missing }}
+</span>
+
+{% else %}
+
+<span style="color:red;font-weight:bold;">
+{{ album.missing }}
+</span>
+
+{% endif %}
 
 </td>
+
+<td>{{ album.asset_count }}</td>
+
+<td><small>{{ album.path }}</small></td>
 
 </tr>
 
@@ -110,20 +216,80 @@ der Status in Immich angezeigt.
 
 </table>
 
-<br>
+<hr>
 
-<a href="/">
+<p>
 
-<button>
+<span style="color:green;"><b>Vorhanden</b></span>
+= Album existiert bereits in Immich.
 
-Zurück
+</p>
 
-</button>
+<p>
+
+<span style="color:orange;"><b>Neu</b></span>
+= Album wird bei der Synchronisation angelegt.
+
+</p>
+
+<p>
+
+<span style="color:blue;"><b>Update</b></span>
+= Album existiert bereits, enthält später aber noch fehlende Dateien.
+
+</p>
+
+<script>
+
+document.querySelectorAll(".auto_add").forEach(cb => {
+
+    cb.addEventListener("change", async function(){
+
+        await fetch("/set_rule",{
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body:JSON.stringify({
+
+                album:this.dataset.album,
+
+                auto_add:this.checked
+
+            })
+
+        });
+
+    });
+
+});
+
+</script>
+
+<a class="button" href="/">Zurück</a>
+
+<a class="button"
+   href="/build_cache"
+   style="background:#444;margin-left:10px;">
+
+Asset-Cache erzeugen
+
+</a>
+
+<a class="button"
+   href="/sync"
+   style="background:green;margin-left:10px;">
+
+Synchronisieren
 
 </a>
 
 </div>
 
-</body>
+{% include "_footer.html" %}
 
+</body>
 </html>

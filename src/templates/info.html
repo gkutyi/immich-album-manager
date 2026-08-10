@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Info - Immich Album Manager</title>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+{% include "_menu.html" %}
+
+<div class="page">
+
+<div class="card">
+
+<h2>Immich Album Manager</h2>
+
+<h3>Version {{ app_version }}</h3>
+
+<p>
+Der Immich Album Manager verwaltet die Zuordnung von
+Dateisystem-Ordnern zu Alben in Immich.
+</p>
+
+<h3>Funktionen</h3>
+
+<ul>
+
+<li>
+Scan von konfigurierten Ordnerstrukturen
+</li>
+
+<li>
+Erkennung von Bildern und Videos
+</li>
+
+<li>
+Verwendung eines lokalen Asset-Caches
+</li>
+
+<li>
+Erkennen bereits vorhandener Immich-Alben
+</li>
+
+<li>
+Anlegen fehlender Alben
+</li>
+
+<li>
+Hinzufügen fehlender Assets zu bestehenden Alben
+</li>
+
+<li>
+Konfigurierbare Album-Regeln
+</li>
+
+<li>
+Synchronisationsberichte
+</li>
+
+<li>
+Report-Historie
+</li>
+
+</ul>
+
+<h3>Synchronisation</h3>
+
+<p>
+Der Album Manager importiert keine Dateien erneut.
+Bereits in Immich vorhandene Assets werden über ihre
+Asset-ID den entsprechenden Alben zugeordnet.
+</p>
+
+<p>
+Die Originaldateien verbleiben an ihrem bestehenden
+Speicherort.
+</p>
+
+<hr>
+
+<p>
+<strong>Immich Album Manager {{ app_version }}</strong>
+</p>
+
+<p>
+Erstellt für die Verwaltung persönlicher Immich-Alben.
+</p>
+
+</div>
+
+</div>
+
+{% include "_footer.html" %}
+
+</body>
+
+</html>

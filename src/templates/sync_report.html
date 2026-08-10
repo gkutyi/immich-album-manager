@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+<meta charset="UTF-8">
+
+<title>Synchronisationsbericht</title>
+
+</head>
+
+<body>
+    
+{% include "_menu.html" %}
+
+<div class="card">
+
+<h2>Synchronisationsbericht</h2>
+
+<p>
+
+<b>{{ report.timestamp }}</b>
+
+</p>
+
+<hr>
+
+<table>
+
+<tr>
+
+<th>Neue Alben</th>
+
+<th>Aktualisiert</th>
+
+<th>Übersprungen</th>
+
+<th>Fehler</th>
+
+</tr>
+
+<tr>
+
+<td class="created">{{ report.created_count }}</td>
+
+<td class="updated">{{ report.updated_count }}</td>
+
+<td class="skipped">{{ report.skipped_count }}</td>
+
+<td class="error">{{ report.error_count }}</td>
+
+</tr>
+
+</table>
+
+<h3 class="created">Neue Alben</h3>
+
+<table>
+
+<tr>
+    <th>Album</th>
+    <th>Assets</th>
+</tr>
+
+{% if report.created %}
+
+{% for album in report.created %}
+
+<tr>
+
+<td>{{ album.album }}</td>
+
+<td>{{ album.assets }}</td>
+
+</tr>
+
+{% endfor %}
+
+{% else %}
+
+<tr>
+
+<td colspan="2">
+
+Keine neuen Alben.
+
+</td>
+
+</tr>
+
+{% endif %}
+
+</table>
+
+<h3 class="updated">Aktualisierte Alben</h3>
+
+<table>
+
+<tr>
+    <th>Album</th>
+    <th>Neue Assets</th>
+</tr>
+
+{% if report.updated %}
+
+{% for album in report.updated %}
+
+<tr>
+
+<td>{{ album.album }}</td>
+
+<td>+{{ album.assets }}</td>
+
+</tr>
+
+{% endfor %}
+
+{% else %}
+
+<tr>
+
+<td colspan="2">
+
+Keine Änderungen.
+
+</td>
+
+</tr>
+
+{% endif %}
+
+</table>
+
+<h3 class="skipped">Übersprungene Alben</h3>
+
+<table>
+
+<tr>
+    <th>Album</th>
+    <th>Grund</th>
+</tr>
+
+{% if report.skipped %}
+
+{% for album in report.skipped %}
+
+<tr>
+
+<td>{{ album.album }}</td>
+
+<td>{{ album.reason }}</td>
+
+</tr>
+
+{% endfor %}
+
+{% else %}
+
+<tr>
+
+<td colspan="2">
+
+Keine.
+
+</td>
+
+</tr>
+
+{% endif %}
+
+</table>
+
+<h3 class="error">Fehler</h3>
+
+<table>
+
+<tr>
+    <th>Album</th>
+    <th>Fehler</th>
+</tr>
+
+{% if report.errors %}
+
+{% for album in report.errors %}
+
+<tr>
+
+<td>{{ album.album }}</td>
+
+<td>{{ album.error }}</td>
+
+</tr>
+
+{% endfor %}
+
+{% else %}
+
+<tr>
+
+<td colspan="2">
+
+Keine Fehler.
+
+</td>
+
+</tr>
+
+{% endif %}
+
+</table>
+
+<hr>
+
+<a class="button" href="/">
+    Zur Startseite
+</a>
+
+</div>
+
+{% include "_footer.html" %}
+
+</body>
+
+</html>

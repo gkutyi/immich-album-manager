@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Synchronisationsberichte</title>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}"
+>
+
+</head>
+
+<body>
+
+<nav class="navbar">
+
+    <a href="/">Start</a>
+    <a href="/scan">Ordner</a>
+    <a href="/reports">Reports</a>
+    <a href="/info">Info</a>
+
+</nav>
+
+
+<div class="container">
+
+    <div class="card">
+
+        <h2>Synchronisationsberichte</h2>
+
+        <p>
+            Die letzten Synchronisationsberichte:
+        </p>
+
+
+        {% if reports %}
+
+        <table>
+
+            <tr>
+                <th>Datum</th>
+                <th>Bericht</th>
+            </tr>
+
+
+            {% for report in reports %}
+
+            <tr>
+
+                <td>
+                    {{ report.display }}
+                </td>
+
+                <td>
+
+                    <a
+                        href="{{ url_for('report', filename=report.file) }}">
+
+                        {{ report.file }}
+
+                    </a>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+        {% else %}
+
+        <p>
+            Keine historischen Synchronisationsberichte vorhanden.
+        </p>
+
+        {% endif %}
+
+
+        <hr>
+
+
+        <p>
+
+            <a
+                class="button"
+                href="/report/last_sync_report.html">
+
+                Letzten Bericht anzeigen
+
+            </a>
+
+        </p>
+
+
+        <p>
+
+            <a
+                class="button"
+                href="/">
+
+                Zurueck zur Hauptseite
+
+            </a>
+
+        </p>
+
+    </div>
+
+</div>
+
+
+<footer>
+
+    Immich Album Manager 1.0.0
+
+</footer>
+
+
+</body>
+
+</html>
