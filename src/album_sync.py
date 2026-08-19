@@ -27,84 +27,133 @@ class AlbumSync:
         immich_albums = self.api.get_albums()
 
         #
-        # Nach Namen indizieren
+        # Nach dem tatsächlichen Album-Namen indizieren
         #
 
         existing = {}
 
         for album in immich_albums:
 
-            name = album.get("albumName", "").strip().lower()
+            name = album.get(
+                "albumName",
+                ""
+            ).strip().lower()
 
             if name:
                 existing[name] = album
-
+    
         #
         # Scanner-Ergebnis ergänzen
         #
 
         for album in albums:
-            
-            if not album.get("auto_update", True):
 
-                album["update"] = False
-                album["missing"] = 0
-                album["missing_ids"] = []
+            #
+            # Tatsächlichen Immich-Namen erzeugen
+            #
+            # Beispiel:
+            # album = "Import"
+            # year  = "2018"
+            #
+            # => "Import (2018)"
+            #
 
-                continue
+            if album.get("year"):
 
-            key = album["album"].strip().lower()
+                album_name = (
+                    f"{album['album']} ({album['year']})"
+                )
+
+            else:
+
+                album_name = album["album"]
+
+            key = album_name.strip().lower()
+
+            #
+            # Regel
+            #
+
+            rule = album.get(
+                "rule",
+                {}
+            )
+
+            auto_add = rule.get(
+                "auto_add",
+                True
+            )
+
+            #
+            # Existiert das Album bereits?
+            #
 
             if key in existing:
 
                 album["exists"] = True
                 album["create"] = False
-                album["update"] = False
-
-                #
-                # Für spätere Synchronisation merken
-                #
 
                 album["immich_id"] = existing[key]["id"]
-                
+
                 #
-                # Fehlende Assets im Album bestimmen
+                # Assets des bestehenden Albums laden
                 #
 
                 immich_assets = self.api.get_album_assets(
                     album["immich_id"]
                 )
 
+                #
+                # Lokale Assets
+                #
+
                 local_assets = set(
-                    album.get("asset_ids", [])
+                    album.get(
+                        "asset_ids",
+                        []
+                    )
                 )
+
+                #
+                # Fehlende Assets bestimmen
+                #
 
                 missing_ids = list(
                     local_assets - immich_assets
                 )
 
                 album["missing_ids"] = missing_ids
-                album["missing"] = len(missing_ids)
 
-                rule = album.get("rule", {})
+                album["missing"] = len(
+                    missing_ids
+                )
+
+                #
+                # Update notwendig?
+                #
 
                 album["update"] = (
-                    album["rule"].get("auto_add", True)
+                    auto_add
                     and
                     len(missing_ids) > 0
                 )
 
             else:
 
+                #
+                # Album existiert noch nicht
+                #
+
                 album["exists"] = False
                 album["create"] = True
                 album["update"] = False
+    
                 album["immich_id"] = None
+    
                 album["missing_ids"] = []
                 album["missing"] = 0
-
+    
         return albums
-        
         
     def update_existing_albums(self, albums):
         """
@@ -115,18 +164,23 @@ class AlbumSync:
         added_assets = 0
 
         for album in albums:
-            
+
             #
             # Automatische Ergänzung deaktiviert?
             #
-    
+
             if not album["rule"].get("auto_add", True):
 
                 print(
-
                     f"{album['album']}: automatische Ergänzung deaktiviert"
-
                 )
+
+                if self.report:
+
+                    self.report.add_skipped(
+                        album["album"],
+                        "automatische Ergänzung deaktiviert"
+                    )
 
                 continue
 
@@ -134,11 +188,13 @@ class AlbumSync:
                 continue
 
             missing = album.get("missing_ids", [])
-            
-            added_assets += len(missing)
 
             if not missing:
-                print(f"{album['album']}: bereits vollständig")
+
+                print(
+                    f"{album['album']}: bereits vollständig"
+                )
+
                 continue
 
             print("=" * 80)
@@ -148,31 +204,58 @@ class AlbumSync:
             print("Erste fehlende IDs:")
 
             for asset_id in missing[:10]:
+
                 print(asset_id)
-                
-            print(f"Insgesamt {added_assets} Assets hinzugefügt.")
 
             print(
-                f"{album['album']}: {len(missing)} neue Assets",
+                f"Insgesamt {len(missing)} Assets werden hinzugefügt."
+            )
+
+            print(
+                f"{album['album']}: "
+                f"{len(missing)} neue Assets",
                 flush=True
             )
 
-            self.api.add_assets_to_album(
-                album["immich_id"],
-                missing
-            )
-            
-            if self.report:
-                self.report.assets_added(
-                    album["album"],
-                    len(missing)
+            try:
+
+                self.api.add_assets_to_album(
+                    album["immich_id"],
+                    missing
                 )
 
-            album["missing"] = 0
-            album["missing_ids"] = []
-            album["update"] = False
+                added_assets += len(missing)
 
-            updated += 1
+                if self.report:
+
+                    self.report.add_updated(
+                        album["album"],
+                        len(missing)
+                    )
+
+                album["missing"] = 0
+                album["missing_ids"] = []
+                album["update"] = False
+    
+                updated += 1
+
+            except Exception as ex:
+
+                print(
+                    f"Fehler beim Aktualisieren von "
+                    f"{album['album']}: {ex}"
+                )
+
+                if self.report:
+
+                    self.report.add_error(
+                        album["album"],
+                        ex
+                    )
+
+        print(
+            f"Insgesamt {added_assets} Assets hinzugefügt."
+        )
 
         return updated
         
@@ -187,9 +270,9 @@ class AlbumSync:
         created = 0
 
         for album in albums:
-            
+
             #
-            # automatische Aktualisierung erlaubt?
+            # Automatische Aktualisierung erlaubt?
             #
 
             if not album.get("auto_update", True):
@@ -197,6 +280,12 @@ class AlbumSync:
                 print(
                     f"{album['album']}: automatische Aktualisierung deaktiviert"
                 )
+
+                if self.report:
+                    self.report.add_skipped(
+                        album["album"],
+                        "automatische Aktualisierung deaktiviert"
+                    )
 
                 continue
 
@@ -217,96 +306,106 @@ class AlbumSync:
 
                 album_name = album["album"]
 
-                print(f"Erstelle Album: {album_name}")
-                
-                if self.report:
-                    self.report.album_created(album_name)
+            print(f"Erstelle Album: {album_name}")
 
-            result = self.api.create_album(
-                album_name
-            )
+            try:
 
-            album["immich_id"] = result.get("id")
-
-            if not album["immich_id"]:
-
-                raise Exception(
-                    f"Immich hat keine Album-ID zurückgegeben.\nAntwort: {result}"
+                result = self.api.create_album(
+                    album_name
                 )
 
-            #
-            # Bereits vorhandene Assets im Album ermitteln
-            #
+                album["immich_id"] = result.get("id")
 
-            existing = self.api.get_album_assets(
-                album["immich_id"]
-            )
+                if not album["immich_id"]:
 
-            #
-            # Nur fehlende Assets hinzufügen
-            #
-
-            missing = [
-
-                asset_id
-
-                for asset_id in album.get("asset_ids", [])
-
-                if asset_id not in existing
-
-            ]
-
-            if missing:
-
-                print(
-                    f"{album_name}: {len(missing)} neue Assets"
-                )
-
-                try:
-
-                    self.api.add_assets_to_album(
-
-                        album["immich_id"],
-
-                        missing
-
+                    raise Exception(
+                        f"Immich hat keine Album-ID zurückgegeben.\n"
+                        f"Antwort: {result}"
                     )
-                    
-                    if self.report:
-                        self.report.assets_added(
-                            album_name,
-                            len(missing)
-                        )
 
-                except Exception as ex:
-
-                    print(
-                        f"Fehler beim Befüllen von "
-                        f"{album_name}: {ex}"
-                    )
-                    
-                    if self.report:
-                        self.report.error(str(ex))
-
-            else:
-
-                print(
-                    f"{album_name}: bereits vollständig"
-                )
-                
-                self.report.album_skipped(album["album"])
-
-            #
-            # Status aktualisieren
-            #
+                #
+                # Bereits vorhandene Assets im Album ermitteln
+                #
     
-            album["exists"] = True
-            album["create"] = False
-            album["update"] = False
+                existing = self.api.get_album_assets(
+                    album["immich_id"]
+                )
 
-            created += 1
+                #
+                # Nur fehlende Assets hinzufügen
+                #
+    
+                missing = [
+    
+                    asset_id
+    
+                    for asset_id in album.get("asset_ids", [])
+    
+                    if asset_id not in existing
+    
+                ]
+    
+                added = 0
+    
+                if missing:
+    
+                    print(
+                        f"{album_name}: {len(missing)} neue Assets"
+                    )
+    
+                    self.api.add_assets_to_album(
+    
+                        album["immich_id"],
+    
+                        missing
+    
+                    )
+    
+                    added = len(missing)
+    
+                else:
+    
+                    print(
+                        f"{album_name}: bereits vollständig"
+                    )
+    
+                #
+                # Report
+                #
+    
+                if self.report:
+    
+                    self.report.add_created(
+                        album_name,
+                        added
+                    )
+    
+                #
+                # Status aktualisieren
+                #
+    
+                album["exists"] = True
+                album["create"] = False
+                album["update"] = False
+        
+                created += 1
+    
+            except Exception as ex:
+    
+                print(
+                    f"Fehler beim Erstellen von "
+                    f"{album_name}: {ex}"
+                )
+    
+                if self.report:
+    
+                    self.report.add_error(
+                        album_name,
+                        ex
+                    )
 
         return created
+        
         
     def prepare_assets(self, albums):
 

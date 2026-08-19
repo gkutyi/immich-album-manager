@@ -13,7 +13,7 @@
         {
             "path": "/external/Bilder/Familie",
             "mode": "years",
-            "enabled": false
+            "enabled": true
         },
         {
             "path": "/external/Bilder/Schule-G\u00fcnther",
