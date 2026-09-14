@@ -62,7 +62,7 @@ class AlbumRules:
 
         defaults = {
 
-            "auto_add": True,
+            "auto_add": False,
 
             "allow_delete": False,
 
@@ -95,7 +95,7 @@ class AlbumRules:
         rule = rules.get(album, {})
     
         defaults = {
-            "auto_add": True,
+            "auto_add": False,
             "allow_delete": False,
             "allow_rename": True,
         }

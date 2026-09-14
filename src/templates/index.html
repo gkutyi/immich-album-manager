@@ -87,15 +87,21 @@ value="{{ root.path }}">
 <select
 name="mode{{ loop.index0 }}">
 
-<option value="children"
-{% if root.mode=="children" %}selected{% endif %}>
+<option
+    value="children"
+    {% if root.mode=="children" %}selected{% endif %}
+>
 children
 </option>
 
-<option value="years"
-{% if root.mode=="years" %}selected{% endif %}>
+
+<option
+    value="years"
+    {% if root.mode=="years" %}selected{% endif %}
+>
 years
 </option>
+
 
 </select>
 
@@ -139,6 +145,16 @@ onclick="location.href='/test'">
 Immich testen
 
 </button>
+
+<button
+type="button"
+onclick="runImport(this)">
+
+Fotos importieren
+
+</button>
+
+<span id="importStatus"></span>
 
 <hr>
 
@@ -216,13 +232,198 @@ Noch kein Synchronisationsbericht vorhanden.
 <a
     class="button"
     href="/cleanup_reports"
-    onclick="return confirm('Alle historischen Berichte außer den letzten 3 löschen?');">
-
+    onclick="return confirm(
+        'Alle Synchronisationsberichte außer den 3 neuesten löschen?'
+    );">
     Alte Berichte löschen
+</a>
+
+</p>
+
+<hr>
+
+<h3>Fotoimportberichte</h3>
+
+{% if last_import_report_exists %}
+
+<p>
+
+<a
+    class="button"
+    href="/import_report/last_import_report.json">
+
+    Letzten Importbericht anzeigen
 
 </a>
 
 </p>
+
+{% else %}
+
+<p>
+Noch kein Fotoimportbericht vorhanden.
+</p>
+
+{% endif %}
+
+
+{% if import_reports %}
+
+<h4>Letzte 3 Importberichte</h4>
+
+<table>
+
+<tr>
+
+<th>Datum</th>
+<th>Bericht</th>
+
+</tr>
+
+{% for report in import_reports %}
+
+<tr>
+
+<td>
+{{ report.display }}
+</td>
+
+<td>
+
+<a
+    href="/import_report/{{ report.file }}"
+>
+
+{{ report.file }}
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endif %}
+
+
+<p>
+
+<a
+    class="button"
+    href="/import_reports">
+
+    Alle Importberichte
+
+</a>
+
+<a
+    class="button"
+    href="/cleanup_import_reports"
+    onclick="return confirm(
+        'Alle Importberichte außer den 3 neuesten löschen?'
+    );">
+    Alte Importberichte löschen
+</a>
+
+</p>
+
+<hr>
+
+<h3>Fotoimportlogs</h3>
+
+{% if last_import_log %}
+
+<p>
+
+<a
+    class="button"
+    href="/import_log/{{ last_import_log }}"
+    target="_blank"
+>
+
+    Letzten Import-Log anzeigen
+
+</a>
+
+</p>
+
+{% else %}
+
+<p>
+Noch kein Fotoimport-Log vorhanden.
+</p>
+
+{% endif %}
+
+
+{% if import_logs %}
+
+<h4>Letzte 3 Import-Logs</h4>
+
+<table>
+
+<tr>
+
+<th>Datum</th>
+<th>Log</th>
+
+</tr>
+
+
+{% for log in import_logs %}
+
+<tr>
+
+<td>
+{{ log.display }}
+</td>
+
+<td>
+
+<a
+    href="/import_log/{{ log.file }}"
+    target="_blank"
+>
+
+{{ log.file }}
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+
+<p>
+
+<a
+    class="button"
+    href="/import_logs"
+>
+
+    Alle Import-Logs
+
+</a>
+
+<a
+    class="button"
+    href="/cleanup_import_logs"
+    onclick="return confirm(
+        'Alle Import-Logs außer den 3 neuesten löschen?'
+    );">
+    Alte Importlogs löschen
+</a>
+
+</p>
+
+{% endif %}
 
 </form>
 
@@ -232,34 +433,44 @@ Noch kein Synchronisationsbericht vorhanden.
 
 let counter={{ config.album_roots|length }};
 
+
 function addRule(){
 
-    const table=document.getElementById("ruletable");
+    const table =
+        document.getElementById(
+            "ruletable"
+        );
 
-    const row=table.insertRow(-1);
+    const row =
+        table.insertRow(-1);
 
     row.innerHTML=`
 
 <td align="center">
+
 <input
-type="checkbox"
-name="enabled${counter}"
-checked>
+    type="checkbox"
+    name="enabled${counter}"
+    checked
+>
+
 </td>
 
 <td>
 
 <input
-type="text"
-name="path${counter}"
-placeholder="Bilder/Reisen">
+    type="text"
+    name="path${counter}"
+    placeholder="Bilder/Reisen"
+>
 
 </td>
 
 <td>
 
 <select
-name="mode${counter}">
+    name="mode${counter}"
+>
 
 <option value="children">
 children
@@ -279,7 +490,128 @@ years
 
 }
 
+
+async function runImport(button){
+
+    const status =
+        document.getElementById(
+            "importStatus"
+        );
+
+
+    if (!confirm(
+        "Foto-Import jetzt starten?"
+    )) {
+
+        return;
+
+    }
+
+
+    button.disabled = true;
+
+
+    status.textContent =
+        "Import läuft ...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/run_import",
+                {
+                    method: "POST"
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (data.success) {
+
+            let message =
+                "Import erfolgreich.";
+
+
+            //
+            // Import-Ergebnis anzeigen
+            //
+
+            if (data.import_result) {
+
+                const result =
+                    data.import_result;
+
+
+                message +=
+                    " Dateien: "
+                    + (result.total || 0);
+
+
+                message +=
+                    ", verschoben: "
+                    + (result.moved || 0);
+
+            }
+
+
+            status.textContent =
+                message;
+
+
+            //
+            // Seite nach erfolgreichem Import
+            // neu laden, damit neue Logs sichtbar werden.
+            //
+
+            setTimeout(
+                function() {
+
+                    location.reload();
+
+                },
+                1000
+            );
+
+
+        } else {
+
+            status.textContent =
+                "X " + (
+                    data.error ||
+                    "Import fehlgeschlagen."
+                );
+
+
+            console.error(
+                data.output ||
+                data.error
+            );
+
+        }
+
+
+    } catch (error) {
+
+        status.textContent =
+            "Fehler beim Starten des Imports.";
+
+
+        console.error(error);
+
+    } finally {
+
+        button.disabled = false;
+
+    }
+
+}
+
 </script>
+
 
 {% include "_footer.html" %}
 

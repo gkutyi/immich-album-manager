@@ -4,6 +4,8 @@ Der **Immich Album Manager** verwaltet Immich-Alben anhand einer konfigurierbare
 
 Das Programm durchsucht definierte Verzeichnisse, erkennt daraus Alben und synchronisiert diese mit einem Immich-Server.
 
+Der Album Manager arbeitet dabei mit bereits in Immich vorhandenen Assets. Die Mediendateien selbst werden bei der Albumsynchronisation nicht erneut nach Immich hochgeladen.
+
 ## Funktionen
 
 - Verbindung zu einem Immich-Server über die Immich API
@@ -17,10 +19,14 @@ Das Programm durchsucht definierte Verzeichnisse, erkennt daraus Alben und synch
 - Ergänzen fehlender Assets in bestehenden Alben
 - Konfigurierbare Album-Regeln
 - Aktivieren oder Deaktivieren der automatischen Ergänzung einzelner Alben
+- Erkennung von Live-Photo-Motion-Assets
+- Import-Funktion für den angebundenen Family Photo Importer
+- Import-Reports
+- Import-Logs
 - Synchronisationsberichte als HTML und TXT
-- Anzeige der letzten Synchronisationsberichte
-- Manuelles Löschen älterer Berichte
-- Weboberflaeche zur Konfiguration und Kontrolle
+- Anzeige der letzten Synchronisations- und Importberichte
+- Manuelles Löschen älterer Berichte und Logs
+- Weboberfläche zur Konfiguration und Kontrolle
 
 ## Voraussetzungen
 
@@ -28,6 +34,7 @@ Das Programm durchsucht definierte Verzeichnisse, erkennt daraus Alben und synch
 - Immich mit aktivierter API
 - Immich API Key
 - Zugriff des Containers auf die zu scannenden Foto- und Videoverzeichnisse
+- Für die Import-Funktion: vorhandener Family Photo Importer
 
 ## Konfiguration
 
@@ -37,16 +44,31 @@ Die Konfiguration wird innerhalb des Containers unter
 
 gespeichert.
 
-Dort befinden sich unter anderem:
+Die wichtigsten Dateien und Verzeichnisse sind:
 
-    /config/config.json
+    /config/settings.json
     /config/album_rules.json
-    /config/asset_cache.json
+    /config/asset_index.json
     /config/reports/
+    /config/import_reports/
+
+### settings.json
+
+Die Datei `settings.json` enthält unter anderem:
+
+- Immich-Server-URL
+- Immich API Key
+- Album-Wurzeln
+- Scan-Modus
+- Cache-Einstellungen
+
+Diese Datei enthält sensible Zugangsdaten und darf nicht in ein öffentliches Git-Repository übernommen werden.
+
+Eine lokale Konfigurationsdatei wird deshalb durch `.gitignore` vom Repository ausgeschlossen.
 
 ## Ordnerregeln
 
-Es koennen mehrere Album-Wurzeln definiert werden.
+Es können mehrere Album-Wurzeln definiert werden.
 
 Beispiel:
 
@@ -56,9 +78,9 @@ mit dem Modus:
 
     children
 
-Dabei koennen die Unterordner als Alben verwendet werden.
+Dabei können die Unterordner als Alben verwendet werden.
 
-Alternativ koennen Jahresstrukturen verwendet werden:
+Alternativ können Jahresstrukturen verwendet werden:
 
     Fotos
     +-- 2022
@@ -66,14 +88,16 @@ Alternativ koennen Jahresstrukturen verwendet werden:
     +-- 2024
     +-- 2025
 
+Der Scanner unterstützt außerdem erkannte Qfiling-Tagesordner.
+
 ## Album-Regeln
 
-Fuer einzelne Alben kann festgelegt werden, ob neue Assets automatisch ergaenzt werden.
+Für einzelne Alben kann festgelegt werden, ob neue Assets automatisch ergänzt werden.
 
-Standardmaessig gilt:
+Der Standard ist bewusst konservativ:
 
     {
-      "auto_add": true,
+      "auto_add": false,
       "allow_delete": false,
       "allow_rename": true
     }
@@ -86,74 +110,137 @@ gespeichert.
 
 ### Auto Add
 
-Wenn `auto_add` auf `true` gesetzt ist, werden neue Assets, die beim Scan im zugehoerigen Ordner gefunden werden, bei der Synchronisation automatisch zum Album hinzugefuegt.
+Wenn `auto_add` auf `true` gesetzt ist, werden neue Assets, die beim Scan im zugehörigen Ordner gefunden werden, bei der Synchronisation automatisch zum bestehenden Album hinzugefügt.
 
-Wenn `auto_add` auf `false` gesetzt ist, wird das Album weiterhin erkannt und angezeigt, aber neue Assets werden bei der Synchronisation nicht automatisch hinzugefuegt.
+Wenn `auto_add` auf `false` gesetzt ist, wird das Album weiterhin erkannt und angezeigt. Neue Assets werden jedoch nicht automatisch zum Album hinzugefügt.
 
-Dies ist besonders nuetzlich fuer Alben, deren Inhalt bewusst manuell kontrolliert werden soll.
+Die Einstellung kann für jedes Album über die Weboberfläche geändert werden.
+
+Der Standardwert `false` verhindert, dass neue Dateien automatisch in bestehende Alben übernommen werden.
+
+### Weitere Album-Regeln
+
+Die Eigenschaften
+
+    allow_delete
+    allow_rename
+
+sind im Regelmodell bereits vorgesehen.
+
+Sie werden in der aktuellen Version jedoch noch nicht aktiv für die Synchronisation verwendet und dienen als Vorbereitung für zukünftige Funktionen.
 
 ## Asset-Cache
 
-Der Asset-Cache enthaelt die Zuordnung zwischen Dateipfad und Immich Asset-ID.
+Der Asset-Cache enthält die Zuordnung zwischen Dateipfad und Immich Asset-ID.
 
-Dadurch muss beim Scannen nicht jedes Asset erneut ueber die Immich API gesucht werden.
+Die Cache-Datei lautet:
 
-Der Cache kann ueber die Weboberflaeche manuell neu aufgebaut werden.
+    /config/asset_index.json
 
-Beim normalen Synchronisationsvorgang wird der Cache ebenfalls aktualisiert.
+Dadurch muss beim Scannen nicht jedes Asset erneut über die Immich API gesucht werden.
+
+Der Cache kann über die Weboberfläche manuell neu aufgebaut werden.
+
+Beim normalen Synchronisationsvorgang wird der Cache entsprechend der Anwendung aktualisiert.
+
+## Live Photos
+
+Immich verwaltet bei Live Photos das Foto und den zugehörigen Motion-Anteil als separate Assets.
+
+Der Motion-Anteil kann in Immich als verstecktes (`hidden`) Video-Asset geführt werden.
+
+Bei der Ermittlung fehlender Assets berücksichtigt der Album Manager diese versteckten Live-Photo-Motion-Assets.
+
+Dadurch werden Motion-Video-Assets eines bereits vorhandenen Live Photos nicht fälschlicherweise bei jeder Synchronisation als fehlende Assets gemeldet.
+
+Die Live-Photo-Motion-Assets werden beim Erstellen eines neuen Albums weiterhin zusammen mit den vorhandenen Asset-IDs an Immich übergeben.
 
 ## Synchronisation
 
 Der normale Ablauf ist:
 
-1. Konfiguration pruefen
-2. Asset-Cache aktualisieren
+1. Konfiguration prüfen
+2. Asset-Cache verwenden bzw. aktualisieren
 3. Ordner scannen
 4. Alben mit Immich vergleichen
-5. Fehlende Alben anlegen
-6. Fehlende Assets ergaenzen
-7. Synchronisationsbericht erzeugen
+5. Fehlende Alben erkennen
+6. Fehlende Alben bei entsprechender Regel anlegen
+7. Fehlende Assets bestehender Alben ermitteln
+8. Live-Photo-Motion-Assets bei der Differenzprüfung berücksichtigen
+9. Fehlende Assets entsprechend der `auto_add`-Regel ergänzen
+10. Synchronisationsbericht erzeugen
 
-Beim Hinzufuegen von Assets werden nur bestehende Immich-Assets referenziert.
+Beim Hinzufügen von Assets werden nur bestehende Immich-Assets referenziert.
 
-Die Dateien selbst werden nicht erneut importiert.
+Die Dateien selbst werden dabei nicht erneut importiert.
+
+## Import
+
+Der Album Manager kann den angebundenen Family Photo Importer über die Weboberfläche ausführen.
+
+Die Import-Funktion kann:
+
+- einen Import starten
+- den Importstatus anzeigen
+- Import-Reports anzeigen
+- frühere Import-Reports anzeigen
+- Import-Logs anzeigen
+- ältere Import-Reports und Logs bereinigen
+
+Die Importdaten werden getrennt von den Synchronisationsberichten gespeichert.
+
+Import-Reports befinden sich unter:
+
+    /config/import_reports/
 
 ## Synchronisationsberichte
 
-Nach jeder Synchronisation werden HTML- und TXT-Berichte erzeugt.
+Nach einer Synchronisation werden HTML- und TXT-Berichte erzeugt.
 
 Die Berichte befinden sich unter:
 
     /config/reports/
 
-Der jeweils letzte Bericht wird zusaetzlich als
+Der jeweils letzte Bericht wird zusätzlich als
 
     last_sync_report.html
     last_sync_report.txt
 
 bereitgestellt.
 
-Die Weboberflaeche bietet Zugriff auf:
+Die Weboberfläche bietet Zugriff auf:
 
 - den letzten Synchronisationsbericht
 - die letzten gespeicherten Berichte
 - die manuelle Bereinigung alter Berichte
 
-Alte Berichte werden nicht automatisch geloescht.
+Alte Berichte werden nicht automatisch gelöscht.
 
-Das Loeschen kann bewusst ueber die Weboberflaeche ausgeloest werden.
+Das Löschen kann bewusst über die Weboberfläche ausgelöst werden.
 
-## Weboberflaeche
+## Import-Berichte und Logs
 
-Die Anwendung laeuft standardmaessig auf Port:
+Import-Berichte werden unter
+
+    /config/import_reports/
+
+gespeichert.
+
+Zusätzlich können Import-Logs über die Weboberfläche angezeigt und bereinigt werden.
+
+Import- und Synchronisationsberichte werden getrennt voneinander verwaltet.
+
+## Weboberfläche
+
+Die Anwendung läuft im Container standardmäßig auf Port:
 
     5050
 
-Nach dem Start ist die Weboberflaeche beispielsweise erreichbar unter:
+Nach dem Start ist die Weboberfläche beispielsweise erreichbar unter:
 
     http://<server-ip>:5050
 
-Die Weboberflaeche bietet unter anderem:
+Die Weboberfläche bietet unter anderem:
 
 - Konfiguration des Immich-Servers
 - Verwaltung der Album-Wurzeln
@@ -161,118 +248,71 @@ Die Weboberflaeche bietet unter anderem:
 - Scan der Ordner
 - Anzeige der erkannten Alben
 - Verwaltung der Album-Regeln
+- Aktivieren und Deaktivieren von `auto_add`
 - Aufbau des Asset-Caches
 - Synchronisation
 - Anzeige der Synchronisationsberichte
+- Start des Family Photo Importers
+- Anzeige von Import-Reports
+- Anzeige von Import-Logs
+- Bereinigung älterer Reports und Logs
 - Informationen zur Anwendung
 
-## Sicherheit
+## Docker
 
-Der Immich API Key wird fuer die Kommunikation mit dem Immich Server benoetigt.
-
-Die Konfigurationsdateien sollten daher nicht oeffentlich zugaenglich gemacht werden.
-
-Insbesondere sollte die Datei
-
-    /config/config.json
-
-nicht in ein oeffentliches Git-Repository uebernommen werden, wenn sie einen echten Immich API Key enthaelt.
-
-## Datenintegritaet
-
-Der Immich Album Manager veraendert keine Originaldateien.
-
-Beim Hinzufuegen von Assets zu einem Album werden ausschliesslich Referenzen innerhalb von Immich verwendet.
-
-Die Originaldateien werden weder kopiert noch erneut importiert.
-
-## System- und Ausschlussordner
-
-Bestimmte Systemordner werden beim Scan automatisch ignoriert.
-
-Dazu gehoeren unter anderem:
-
-    .@__thumb
-    @Recycle
-    #recycle
-    .Trash
-    .Trashes
-    .DS_Store
-    Thumbs.db
-    iPod Photo Cache
-    lost+found
-
-Darueber hinaus werden standardmaessig bestimmte Ordner ausgeschlossen:
-
-    Import
-    Other
-    Scan
-    Unknown Year Taken
-
-## Projektstruktur
-
-Die wichtigsten Komponenten des Projekts sind:
-
-    app.py
-        Flask-Webanwendung und HTTP-Routen
-
-    scanner.py
-        Durchsuchen der konfigurierten Ordner
-
-    immich_api.py
-        Kommunikation mit der Immich API
-
-    album_sync.py
-        Vergleich und Synchronisation der Alben
-
-    album_rules.py
-        Verwaltung der Album-Regeln
-
-    asset_cache.py
-        Verwaltung des Asset-Caches
-
-    sync_report.py
-        Erzeugung der Synchronisationsberichte
-
-    rules.py
-        Erkennung von System-, Jahres- und Tagesordnern
-
-    templates/
-        HTML-Vorlagen der Weboberflaeche
-
-    static/
-        CSS und statische Dateien
-
-## Installation
-
-Die Anwendung ist fuer den Betrieb innerhalb eines Docker-Containers vorgesehen.
+Die Anwendung ist für den Betrieb innerhalb eines Docker-Containers vorgesehen.
 
 Das Repository kann beispielsweise mit Git geklont werden:
 
     git clone https://github.com/gkutyi/immich-album-manager.git
 
-Danach kann das Projekt entsprechend der vorhandenen Docker-Konfiguration gestartet werden.
+Anschließend kann die Anwendung entsprechend der vorhandenen Docker-Konfiguration gestartet werden.
 
-Die konkrete Container-Konfiguration haengt von der jeweiligen Umgebung und der verwendeten Ordnerstruktur ab.
+Die konkrete Container- und Volume-Konfiguration hängt von der jeweiligen Umgebung und Ordnerstruktur ab.
+
+## Sicherheit
+
+Der Immich API Key wird für die Kommunikation mit dem Immich Server benötigt.
+
+Konfigurationsdateien mit Zugangsdaten dürfen nicht öffentlich zugänglich gemacht werden.
+
+Insbesondere sollte
+
+    /config/settings.json
+
+nicht in ein öffentliches Git-Repository übernommen werden.
+
+Auch Runtime-Daten wie
+
+    /config/album_rules.json
+    /config/asset_index.json
+    /config/reports/
+    /config/import_reports/
+    /logs/
+
+werden nicht versioniert.
 
 ## Version
 
 Aktuelle Version:
 
-**1.0.0**
+**1.2.0**
 
-Version 1.0.0 ist die erste stabile Version des Immich Album Managers.
+### Version 1.2.0
 
-## Ausblick
+Die Version 1.2.0 erweitert den Immich Album Manager unter anderem um:
 
-Die Version 1.0.0 bildet die stabile Grundlage fuer die weitere Entwicklung.
-
-Fuer eine zukuenftige Version 2.x ist insbesondere eine Erweiterung des Regelwerks vorgesehen.
-
-Geplant sind unter anderem differenziertere Regeln fuer die automatische Synchronisation und eine flexiblere Definition der Albumstruktur.
+- Import-Funktion und Import-Reports
+- Import-Logs
+- verbesserte Weboberfläche
+- Live-Photo-Motion-Erkennung
+- korrigierte Behandlung versteckter Live-Photo-Video-Assets
+- `auto_add` mit dem sicheren Standardwert `false`
+- überarbeitete Docker-Konfiguration
+- Bereinigung von Runtime- und Konfigurationsdateien aus dem Git-Repository
 
 ## Lizenz
 
-Dieses Projekt wird derzeit ohne ausdrueckliche Open-Source-Lizenz veroeffentlicht.
+Dieses Projekt wird derzeit ohne ausdrückliche Open-Source-Lizenz veröffentlicht.
 
-Eine geeignete Lizenz kann zu einem spaeteren Zeitpunkt festgelegt werden.
+Eine geeignete Lizenz kann zu einem späteren Zeitpunkt festgelegt werden.

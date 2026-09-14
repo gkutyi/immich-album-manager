@@ -1,0 +1,40 @@
+# ============================================================
+# Runtime configuration
+# ============================================================
+
+config/album_rules.json
+config/asset_index.json
+config/config.json
+
+# Runtime reports
+config/reports/
+config/import_reports/
+
+# Runtime logs
+logs/
+
+# Local backups / temporary files
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local virtual environments
+.venv/
+venv/
+
+# Editor / OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets / local credentials
+Immich-api.key
+config/settings.json
+config/edit_json.py
+
+# Secrets / local credentials
+Immich-api.key
+config/settings.json
+config/edit_json.py

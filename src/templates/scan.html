@@ -2,7 +2,7 @@
 <html lang="de">
 
 <head>
-    
+
 <link
     rel="stylesheet"
     href="{{ url_for('static', filename='style.css') }}">
@@ -14,7 +14,7 @@
 </head>
 
 <body>
-    
+
 {% include "_menu.html" %}
 
 <div class="card">
@@ -115,25 +115,62 @@ Asset-Cache erzeugen
 
 </div>
 
-<table>
+<table id="albumTable">
+
+<thead>
 
 <tr>
-    <th>Status</th>
-    <th>Album</th>
-    <th>Auto</th>
-    <th>Bilder</th>
-    <th>Videos</th>
-    <th>Gesamt</th>
-    <th>Cache</th>
-    <th>Fehlend</th>
-    <th>Assets</th>
-    <th>Pfad</th>
+
+<th class="sortable" data-type="text">
+    Status
+</th>
+
+<th class="sortable" data-type="text">
+    Album
+</th>
+
+<th class="sortable" data-type="boolean">
+    Auto
+</th>
+
+<th class="sortable" data-type="number">
+    Bilder
+</th>
+
+<th class="sortable" data-type="number">
+    Videos
+</th>
+
+<th class="sortable" data-type="number">
+    Gesamt
+</th>
+
+<th class="sortable" data-type="number">
+    Cache
+</th>
+
+<th class="sortable" data-type="number">
+    Fehlend
+</th>
+
+<th class="sortable" data-type="number">
+    Assets
+</th>
+
+<th class="sortable" data-type="text">
+    Pfad
+</th>
+
 </tr>
+
+</thead>
+
+<tbody>
 
 {% for album in albums %}
 
 <tr>
-    
+
 <td>
 
 {% if album.exists %}
@@ -214,6 +251,8 @@ Asset-Cache erzeugen
 
 {% endfor %}
 
+</tbody>
+
 </table>
 
 <hr>
@@ -266,6 +305,130 @@ document.querySelectorAll(".auto_add").forEach(cb => {
     });
 
 });
+
+</script>
+
+<script>
+
+document
+    .querySelectorAll("#albumTable th.sortable")
+    .forEach((header, columnIndex) => {
+
+        header.style.cursor = "pointer";
+
+        header.addEventListener("click", () => {
+
+            const table =
+                document.getElementById("albumTable");
+
+            const tbody =
+                table.tBodies[0];
+
+            const rows =
+                Array.from(tbody.rows);
+
+            const type =
+                header.dataset.type;
+
+            const ascending =
+                header.dataset.order !== "asc";
+
+            rows.sort((a, b) => {
+
+                let valueA =
+                    a.cells[columnIndex]
+                    .innerText
+                    .trim();
+
+                let valueB =
+                    b.cells[columnIndex]
+                    .innerText
+                    .trim();
+
+                if (type === "number") {
+
+                    const numA =
+                        parseInt(
+                            valueA.replace(/[^\d-]/g, ""),
+                            10
+                        ) || 0;
+
+                    const numB =
+                        parseInt(
+                            valueB.replace(/[^\d-]/g, ""),
+                            10
+                        ) || 0;
+
+                    return ascending
+                        ? numA - numB
+                        : numB - numA;
+                }
+
+                if (type === "boolean") {
+
+                    const checkA =
+                        a.cells[columnIndex]
+                        .querySelector("input[type=checkbox]");
+
+                    const checkB =
+                        b.cells[columnIndex]
+                        .querySelector("input[type=checkbox]");
+
+                    const boolA =
+                        checkA && checkA.checked ? 1 : 0;
+
+                    const boolB =
+                        checkB && checkB.checked ? 1 : 0;
+
+                    return ascending
+                        ? boolA - boolB
+                        : boolB - boolA;
+                }
+
+                return ascending
+                    ? valueA.localeCompare(
+                        valueB,
+                        "de",
+                        {
+                            numeric: true,
+                            sensitivity: "base"
+                        }
+                    )
+                    : valueB.localeCompare(
+                        valueA,
+                        "de",
+                        {
+                            numeric: true,
+                            sensitivity: "base"
+                        }
+                    );
+
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+
+            table
+                .querySelectorAll("th.sortable")
+                .forEach(th => {
+
+                    th.dataset.order = "";
+
+                    th.textContent =
+                        th.textContent
+                            .replace(" ▲", "")
+                            .replace(" ▼", "");
+
+                });
+
+            header.dataset.order =
+                ascending ? "asc" : "desc";
+
+            header.textContent +=
+                ascending ? " ▲" : " ▼";
+
+        });
+
+    });
 
 </script>
 

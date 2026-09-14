@@ -41,7 +41,7 @@ class AlbumSync:
 
             if name:
                 existing[name] = album
-    
+
         #
         # Scanner-Ergebnis ergänzen
         #
@@ -81,7 +81,7 @@ class AlbumSync:
 
             auto_add = rule.get(
                 "auto_add",
-                True
+                False
             )
 
             #
@@ -99,43 +99,40 @@ class AlbumSync:
                 # Assets des bestehenden Albums laden
                 #
 
-                immich_assets = self.api.get_album_assets(
-                    album["immich_id"]
-                )
+                immich_assets = self.api.get_album_assets(album["immich_id"])
 
-                #
-                # Lokale Assets
-                #
+                local_assets = set(album.get("asset_ids", []))
 
-                local_assets = set(
-                    album.get(
-                        "asset_ids",
-                        []
+                # Assets, die lokal vorhanden sind, aber laut Timeline-Abfrage
+                # nicht im Immich-Album gefunden wurden.
+                missing_ids = list(local_assets - immich_assets)
+
+                # Immich führt den Motion-Anteil von Live Photos als
+                # VIDEO + visibility=hidden. Diese Assets werden absichtlich
+                # nicht von get_album_assets() zurückgeliefert.
+                #
+                # Sie dürfen daher nicht als fehlende Album-Assets gewertet werden.
+                live_photo_video_ids = self.api.get_live_photo_video_ids(missing_ids)
+
+                if live_photo_video_ids:
+                    print(
+                        f"[INFO] {album_name}: "
+                        f"{len(live_photo_video_ids)} Live-Photo-Motion-Assets "
+                        f"aus missing entfernt"
                     )
-                )
 
-                #
-                # Fehlende Assets bestimmen
-                #
-
-                missing_ids = list(
-                    local_assets - immich_assets
-                )
+                missing_ids = [
+                    asset_id
+                    for asset_id in missing_ids
+                    if asset_id not in live_photo_video_ids
+                ]
 
                 album["missing_ids"] = missing_ids
-
-                album["missing"] = len(
-                    missing_ids
-                )
-
-                #
-                # Update notwendig?
-                #
+                album["missing"] = len(missing_ids)
+                album["live_photo_video_ids"] = list(live_photo_video_ids)
 
                 album["update"] = (
-                    auto_add
-                    and
-                    len(missing_ids) > 0
+                    auto_add and len(missing_ids) > 0
                 )
 
             else:
@@ -147,14 +144,14 @@ class AlbumSync:
                 album["exists"] = False
                 album["create"] = True
                 album["update"] = False
-    
+
                 album["immich_id"] = None
-    
+
                 album["missing_ids"] = []
                 album["missing"] = 0
-    
+
         return albums
-        
+
     def update_existing_albums(self, albums):
         """
         Ergänzt bestehende Alben um fehlende Assets.
@@ -169,7 +166,7 @@ class AlbumSync:
             # Automatische Ergänzung deaktiviert?
             #
 
-            if not album["rule"].get("auto_add", True):
+            if not album["rule"].get("auto_add", False):
 
                 print(
                     f"{album['album']}: automatische Ergänzung deaktiviert"
@@ -188,6 +185,18 @@ class AlbumSync:
                 continue
 
             missing = album.get("missing_ids", [])
+
+            # Sicherheitsfilter: Live-Photo-Motion-Assets niemals
+            # als normale fehlende Album-Assets hinzufügen.
+            live_photo_video_ids = set(
+                album.get("live_photo_video_ids", [])
+            )
+
+            missing = [
+                asset_id
+                for asset_id in missing
+                if asset_id not in live_photo_video_ids
+            ]
 
             if not missing:
 
@@ -236,7 +245,7 @@ class AlbumSync:
                 album["missing"] = 0
                 album["missing_ids"] = []
                 album["update"] = False
-    
+
                 updated += 1
 
             except Exception as ex:
@@ -258,8 +267,8 @@ class AlbumSync:
         )
 
         return updated
-        
-        
+
+
     def create_missing_albums(self, albums):
         """
         Legt alle fehlenden Alben in Immich an
@@ -275,18 +284,11 @@ class AlbumSync:
             # Automatische Aktualisierung erlaubt?
             #
 
-            if not album.get("auto_update", True):
-
+            if not album.get("rule", {}).get("auto_add", False):
                 print(
-                    f"{album['album']}: automatische Aktualisierung deaktiviert"
+                    f"[SKIP] Album '{album['album']}' "
+                    f"auto_add=False"
                 )
-
-                if self.report:
-                    self.report.add_skipped(
-                        album["album"],
-                        "automatische Aktualisierung deaktiviert"
-                    )
-
                 continue
 
             if not album["create"]:
@@ -326,7 +328,7 @@ class AlbumSync:
                 #
                 # Bereits vorhandene Assets im Album ermitteln
                 #
-    
+
                 existing = self.api.get_album_assets(
                     album["immich_id"]
                 )
@@ -334,79 +336,79 @@ class AlbumSync:
                 #
                 # Nur fehlende Assets hinzufügen
                 #
-    
+
                 missing = [
-    
+
                     asset_id
-    
+
                     for asset_id in album.get("asset_ids", [])
-    
+
                     if asset_id not in existing
-    
+
                 ]
-    
+
                 added = 0
-    
+
                 if missing:
-    
+
                     print(
                         f"{album_name}: {len(missing)} neue Assets"
                     )
-    
+
                     self.api.add_assets_to_album(
-    
+
                         album["immich_id"],
-    
+
                         missing
-    
+
                     )
-    
+
                     added = len(missing)
-    
+
                 else:
-    
+
                     print(
                         f"{album_name}: bereits vollständig"
                     )
-    
+
                 #
                 # Report
                 #
-    
+
                 if self.report:
-    
+
                     self.report.add_created(
                         album_name,
                         added
                     )
-    
+
                 #
                 # Status aktualisieren
                 #
-    
+
                 album["exists"] = True
                 album["create"] = False
                 album["update"] = False
-        
+
                 created += 1
-    
+
             except Exception as ex:
-    
+
                 print(
                     f"Fehler beim Erstellen von "
                     f"{album_name}: {ex}"
                 )
-    
+
                 if self.report:
-    
+
                     self.report.add_error(
                         album_name,
                         ex
                     )
 
         return created
-        
-        
+
+
     def prepare_assets(self, albums):
 
         """
@@ -418,7 +420,7 @@ class AlbumSync:
             self.collect_asset_ids(album)
 
         return albums
-        
+
     def collect_asset_ids(self, album):
 
         """

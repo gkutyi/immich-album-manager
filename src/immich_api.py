@@ -109,7 +109,7 @@ class Immich:
         r.raise_for_status()
 
         return r.json()
-        
+
 # ---------------------------------------------------------
 
     def add_assets_to_album(
@@ -188,7 +188,7 @@ class Immich:
             response.raise_for_status()
 
             data = response.json()
-                
+
             #
             # verschiedene Immich-Versionen
             #
@@ -222,7 +222,7 @@ class Immich:
     # ---------------------------------------------------------
 
     def get_asset_index(self, force=False):
-    
+
         #
         # Vorhandenen Cache verwenden
         #
@@ -326,7 +326,7 @@ class Immich:
                 })
 
         return result
-        
+
 # ---------------------------------------------------------
 
     def get_album_assets(self, album_id):
@@ -356,7 +356,7 @@ class Immich:
         # 2. Jeden Bucket laden
         #
         for bucket in buckets:
-    
+
             if isinstance(bucket, dict):
                 time_bucket = bucket.get("timeBucket")
             else:
@@ -414,3 +414,55 @@ class Immich:
         print(f"Album enthält {len(ids)} Assets")
 
         return ids
+
+    def get_asset(self, asset_id):
+        """
+        Liefert die vollständigen Metadaten eines Immich-Assets.
+        """
+        r = requests.get(
+            f"{self.base_url}/assets/{asset_id}",
+            headers=self.headers,
+            timeout=30
+        )
+
+        if r.status_code != 200:
+            raise Exception(
+                f"Asset {asset_id} konnte nicht geladen werden: "
+               f"{r.status_code} {r.text}"
+            )
+
+        return r.json()
+
+
+    def get_live_photo_video_ids(self, asset_ids):
+        """
+        Ermittelt jene Asset-IDs, die in Immich als versteckte
+        Live-Photo/Motion-Photo-Videos geführt werden.
+
+        Immich verwendet:
+          type       = VIDEO
+          visibility = hidden
+
+        für den Motion-Anteil eines Live Photos.
+
+        Es werden ausschließlich die übergebenen Asset-IDs geprüft.
+        """
+        live_photo_video_ids = set()
+
+        for asset_id in asset_ids:
+            try:
+                asset = self.get_asset(asset_id)
+
+                if (
+                    asset.get("type") == "VIDEO"
+                    and asset.get("visibility") == "hidden"
+                ):
+                    live_photo_video_ids.add(asset_id)
+
+            except Exception as e:
+                print(
+                    f"[WARN] Live-Photo-Prüfung für "
+                    f"{asset_id} fehlgeschlagen: {e}"
+                )
+
+        return live_photo_video_ids

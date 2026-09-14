@@ -11,6 +11,15 @@ services:
       - ./logs:/logs
       - /share/Multimedia:/external:ro
 
+      # Family Photo Importer
+      - /share/Container/family-photo-importer:/family-photo-importer:ro
+
+      # Ergebnis des Family Photo Importers
+      - /share/Container/family-photo-importer/reports:/import-reports:rw
+
+      # Zugriff auf Docker Engine des QNAP-Hosts
+      - /var/run/docker.sock:/var/run/docker.sock
+
     restart: unless-stopped
 
     networks:

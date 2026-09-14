@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+<title>Fotoimport-Logs</title></head>
+<body>
+<div class="card">
+<h2>Fotoimport-Logs</h2>
+
+{% if logs %}
+
+    <p>
+        Es sind <b>{{ logs|length }}</b> Import-Logs vorhanden.
+    </p>
+
+    <table>
+
+        <tr>
+            <th>Datum</th>
+            <th>Datei</th>
+            <th>Aktion</th>
+        </tr>
+
+        {% for log in logs %}
+
+        <tr>
+
+            <td>
+                {{ log.display }}
+            </td>
+
+            <td>
+                {{ log.file }}
+            </td>
+
+            <td>
+                <a
+                    class="button"
+                    href="{{ url_for('import_log', filename=log.file) }}">
+                    Anzeigen
+                </a>
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+{% else %}
+
+    <p>
+        Keine Fotoimport-Logs vorhanden.
+    </p>
+
+{% endif %}
+
+<hr>
+
+<a
+    class="button"
+    href="/cleanup_import_logs"
+    onclick="return confirm(
+        'Alle Import-Logs außer den 3 neuesten löschen?'
+    );">
+    Alte Import-Logs löschen
+</a>
+
+<a
+    class="button"
+    href="/"
+    style="margin-left:10px;">
+    Zurück
+</a></div>
+</body>
+</html>

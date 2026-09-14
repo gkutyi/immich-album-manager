@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Fotoimportbericht</title>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}"
+>
+
+</head>
+
+<body>
+
+{% include "_menu.html" %}
+
+<div class="card">
+
+<h2>Fotoimportbericht</h2>
+
+<p>
+<strong>Datei:</strong>
+{{ filename }}
+</p>
+
+{% if report.timestamp %}
+
+<p>
+<strong>Zeitpunkt:</strong>
+{{ report.timestamp }}
+</p>
+
+{% endif %}
+
+{% if report.source %}
+
+<p>
+<strong>Quelle:</strong>
+{{ report.source }}
+</p>
+
+{% endif %}
+
+<hr>
+
+{% set result = report.result %}
+
+<h3>Ergebnis</h3>
+
+<table>
+
+<tr>
+<th>Eigenschaft</th>
+<th>Wert</th>
+</tr>
+
+<tr>
+<td>Dateien</td>
+<td>{{ result.total | default(0) }}</td>
+</tr>
+
+<tr>
+<td>Verschoben</td>
+<td>{{ result.moved | default(0) }}</td>
+</tr>
+
+<tr>
+<td>Dry-Run</td>
+<td>{{ result.dry_run | default(0) }}</td>
+</tr>
+
+<tr>
+<td>Ohne Datum</td>
+<td>{{ result.no_date | default(0) }}</td>
+</tr>
+
+<tr>
+<td>Ziel vorhanden</td>
+<td>{{ result.exists | default(0) }}</td>
+</tr>
+
+<tr>
+<td>Vorhanden gelöscht</td>
+<td>{{ result.exists_deleted | default(0) }}</td>
+</tr>
+
+<tr>
+<td>Löschfehler</td>
+<td>{{ result.exists_delete_error | default(0) }}</td>
+</tr>
+
+<tr>
+<td>Ignoriert</td>
+<td>{{ result.ignored | default(0) }}</td>
+</tr>
+
+<tr>
+<td>Status</td>
+<td>{{ result.status | default("UNKNOWN") }}</td>
+</tr>
+
+</table>
+
+<br>
+
+<a
+    class="button"
+    href="/"
+>
+Zur Startseite
+</a>
+
+</div>
+
+{% include "_footer.html" %}
+
+</body>
+
+</html>

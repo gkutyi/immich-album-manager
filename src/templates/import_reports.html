@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Fotoimportberichte</title>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}"
+>
+
+</head>
+
+<body>
+
+{% include "_menu.html" %}
+
+<div class="card">
+
+<h2>Fotoimportberichte</h2>
+
+{% if reports %}
+
+<table>
+
+<thead>
+
+<tr>
+<th>Datum</th>
+<th>Bericht</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for report in reports %}
+
+<tr>
+
+<td>
+{{ report.display }}
+</td>
+
+<td>
+
+<a
+    href="/import_report/{{ report.file }}"
+>
+{{ report.file }}
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+{% else %}
+
+<p>
+Noch keine Fotoimportberichte vorhanden.
+</p>
+
+{% endif %}
+
+<br>
+
+<a
+    class="button"
+    href="/"
+>
+Zur Startseite
+</a>
+
+</div>
+
+{% include "_footer.html" %}
+
+</body>
+
+</html>

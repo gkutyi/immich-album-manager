@@ -1,8 +1,18 @@
 from datetime import datetime
 import os
 import glob
+import subprocess
+import json
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify, render_template_string, send_from_directory
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    jsonify,
+    send_from_directory
+)
 
 from config import Config
 from immich_api import Immich
@@ -11,11 +21,18 @@ from album_sync import AlbumSync
 from asset_cache import AssetCache
 from album_rules import AlbumRules
 from sync_report import SyncReport
+from import_report import ImportReport
+
 
 app = Flask(__name__)
 
-APP_VERSION = "1.0.0"
 
+APP_VERSION = "1.2.0"
+
+
+# ============================================================
+# VERSION
+# ============================================================
 
 @app.context_processor
 def inject_version():
@@ -25,34 +42,82 @@ def inject_version():
     }
 
 
+# ============================================================
+# SYNCHRONISATIONSBERICHTE
+# ============================================================
+
 def get_report_files(limit=3):
 
     report_dir = "/config/reports"
 
+    pattern = os.path.join(
+        report_dir,
+        "????-??-??_??-??-??_sync_report.html"
+    )
+
     reports = sorted(
-
-        glob.glob(
-            os.path.join(
-                report_dir,
-                "*_sync_report.html"
-            )
-        ),
-
+        glob.glob(pattern),
         key=os.path.getmtime,
-
         reverse=True
-
     )
 
     files = []
 
-    for file in reports:
+    for file in reports[:limit]:
 
         name = os.path.basename(file)
 
-        #
-        # Zeitstempel aus Dateinamen
-        #
+        stamp = name[:19]
+
+        try:
+
+            dt = datetime.strptime(
+                stamp,
+                "%Y-%m-%d_%H-%M-%S"
+            )
+
+            display = dt.strftime(
+                "%d.%m.%Y %H:%M:%S"
+            )
+
+        except ValueError:
+
+            display = name
+
+        files.append({
+
+            "file": name,
+            "display": display
+
+        })
+
+    return files
+
+
+# ============================================================
+# IMPORT-REPORTS
+# ============================================================
+
+def get_import_report_files(limit=3):
+
+    report_dir = "/config/reports"
+
+    pattern = os.path.join(
+        report_dir,
+        "????-??-??_??-??-??_import_report.json"
+    )
+
+    reports = sorted(
+        glob.glob(pattern),
+        key=os.path.getmtime,
+        reverse=True
+    )
+
+    files = []
+
+    for file in reports[:limit]:
+
+        name = os.path.basename(file)
 
         try:
 
@@ -79,7 +144,68 @@ def get_report_files(limit=3):
 
         })
 
-    return files[:limit]
+    return files
+
+
+# ============================================================
+# IMPORT-LOGS
+# ============================================================
+
+def get_import_log_files(limit=3):
+
+    log_dir = "/logs/family-photo-importer"
+
+    pattern = os.path.join(
+        log_dir,
+        "import-????-??-??.log"
+    )
+
+    logs = sorted(
+        glob.glob(pattern),
+        key=os.path.getmtime,
+        reverse=True
+    )
+
+    files = []
+
+    for file in logs[:limit]:
+
+        name = os.path.basename(file)
+
+        try:
+
+            date_part = name[
+                len("import-"):
+                len("import-") + 10
+            ]
+
+            dt = datetime.strptime(
+                date_part,
+                "%Y-%m-%d"
+            )
+
+            display = dt.strftime(
+                "%d.%m.%Y"
+            )
+
+        except ValueError:
+
+            display = name
+
+        files.append({
+
+            "file": name,
+
+            "display": display
+
+        })
+
+    return files
+
+
+# ============================================================
+# STARTSEITE
+# ============================================================
 
 @app.route("/")
 def index():
@@ -89,55 +215,13 @@ def index():
     report_dir = "/config/reports"
 
     #
-    # Historische Reports ermitteln
+    # Synchronisationsberichte
     #
 
-    pattern = os.path.join(
-        report_dir,
-        "????-??-??_??-??-??_sync_report.html"
-    )
-
-    reports = sorted(
-
-        glob.glob(pattern),
-
-        key=os.path.getmtime,
-
-        reverse=True
-
-    )
-
-    report_files = []
-
-    for file in reports[:3]:
-
-        name = os.path.basename(file)
-
-        stamp = name[:19]
-
-        try:
-
-            dt = datetime.strptime(
-                stamp,
-                "%Y-%m-%d_%H-%M-%S"
-            )
-
-        except ValueError:
-
-            continue
-
-        report_files.append({
-
-            "file": name,
-
-            "display": dt.strftime(
-                "%d.%m.%Y %H:%M:%S"
-            )
-
-        })
+    reports = get_report_files(3)
 
     #
-    # Gibt es einen aktuellen Bericht?
+    # Letzter Synchronisationsbericht
     #
 
     last_report = os.path.join(
@@ -149,17 +233,65 @@ def index():
         last_report
     )
 
+    #
+    # Importberichte
+    #
+
+    import_reports = get_import_report_files(3)
+
+    #
+    # Letzter Importbericht
+    #
+
+    last_import_report = os.path.join(
+        report_dir,
+        "last_import_report.json"
+    )
+
+    last_import_report_exists = os.path.exists(
+        last_import_report
+    )
+
+    #
+    # Import-Logs
+    #
+
+    import_logs = get_import_log_files(3)
+
+    #
+    # Letzter Import-Log
+    #
+
+    last_import_log = None
+
+    if import_logs:
+
+        last_import_log = import_logs[0]["file"]
+
     return render_template(
 
         "index.html",
 
         config=cfg,
 
-        reports=report_files,
+        reports=reports,
 
-        last_report_exists=last_report_exists
+        last_report_exists=last_report_exists,
+
+        import_reports=import_reports,
+
+        last_import_report_exists=last_import_report_exists,
+
+        import_logs=import_logs,
+
+        last_import_log=last_import_log
 
     )
+
+
+# ============================================================
+# KONFIGURATION SPEICHERN
+# ============================================================
 
 @app.route("/save", methods=["POST"])
 def save():
@@ -202,16 +334,20 @@ def save():
             "children"
         )
 
-        enabled = request.form.get(
-            f"enabled{i}"
-        ) == "on"
+        enabled = (
+            request.form.get(
+                f"enabled{i}"
+            ) == "on"
+        )
 
         if path:
 
             roots.append({
+
                 "path": path,
                 "mode": mode,
                 "enabled": enabled
+
             })
 
         i += 1
@@ -220,49 +356,314 @@ def save():
 
     Config.save(cfg)
 
-    return redirect(url_for("index"))
+    return redirect(
+        url_for("index")
+    )
 
+
+# ============================================================
+# FOTOIMPORT
+# ============================================================
+
+@app.route("/run_import", methods=["POST"])
+def run_import():
+
+    script = "/family-photo-importer/run-import.sh"
+
+    # ========================================================
+    # SCRIPT PRÜFEN
+    # ========================================================
+
+    if not os.path.isfile(script):
+
+        return jsonify({
+            "success": False,
+            "error": f"Import-Script nicht gefunden: {script}"
+        }), 500
+
+    if not os.access(script, os.X_OK):
+
+        return jsonify({
+            "success": False,
+            "error": f"Import-Script ist nicht ausführbar: {script}"
+        }), 500
+
+    # ========================================================
+    # IMPORT STARTEN
+    # ========================================================
+
+    try:
+
+        env = os.environ.copy()
+
+        # Kennzeichnung für run-import.sh
+        env["IMPORT_SOURCE"] = "WEB"
+
+        result = subprocess.run(
+
+            ["/bin/sh", script],
+
+            cwd="/family-photo-importer",
+
+            capture_output=True,
+
+            text=True,
+
+            timeout=1800,
+
+            env=env
+        )
+
+        stdout = result.stdout or ""
+        stderr = result.stderr or ""
+
+        # ====================================================
+        # IMPORT_RESULT_JSON AUS stdout EXTRAHIEREN
+        # ====================================================
+
+        import_result = None
+
+        for line in stdout.splitlines():
+
+            if line.startswith("IMPORT_RESULT_JSON="):
+
+                json_text = line[
+                    len("IMPORT_RESULT_JSON="):
+                ].strip()
+
+                try:
+
+                    import_result = json.loads(
+                        json_text
+                    )
+
+                except json.JSONDecodeError:
+
+                    import_result = None
+
+        # ====================================================
+        # REPORT-VERZEICHNIS
+        # ====================================================
+
+        report_dir = "/config/reports"
+
+        os.makedirs(
+            report_dir,
+            exist_ok=True
+        )
+
+        # ====================================================
+        # IMPORT-REPORT ERZEUGEN
+        # ====================================================
+
+        if import_result is not None:
+
+            timestamp = datetime.now().strftime(
+                "%Y-%m-%d_%H-%M-%S"
+            )
+
+            report_data = {
+
+                "timestamp": timestamp,
+
+                "source": "WEB",
+
+                "result": import_result
+
+            }
+
+            # ------------------------------------------------
+            # Letzter Importbericht
+            # ------------------------------------------------
+
+            last_report = os.path.join(
+                report_dir,
+                "last_import_report.json"
+            )
+
+            with open(
+                last_report,
+                "w",
+                encoding="utf-8"
+            ) as f:
+
+                json.dump(
+                    report_data,
+                    f,
+                    indent=2,
+                    ensure_ascii=False
+                )
+
+            # ------------------------------------------------
+            # Historischer Importbericht
+            # ------------------------------------------------
+
+            historical_report = os.path.join(
+                report_dir,
+                f"{timestamp}_import_report.json"
+            )
+
+            with open(
+                historical_report,
+                "w",
+                encoding="utf-8"
+            ) as f:
+
+                json.dump(
+                    report_data,
+                    f,
+                    indent=2,
+                    ensure_ascii=False
+                )
+
+        # ====================================================
+        # AKTUELLSTEN LOG ERMITTELN
+        # ====================================================
+
+        log_dir = "/logs/family-photo-importer"
+
+        log_file = None
+
+        if os.path.isdir(log_dir):
+
+            log_files = [
+
+                os.path.join(
+                    log_dir,
+                    filename
+                )
+
+                for filename in os.listdir(log_dir)
+
+                if filename.startswith("import-")
+                and filename.endswith(".log")
+
+            ]
+
+            if log_files:
+
+                log_file = max(
+                    log_files,
+                    key=os.path.getmtime
+                )
+
+        # ====================================================
+        # IMPORT ERFOLGREICH
+        # ====================================================
+
+        if result.returncode == 0:
+
+            return jsonify({
+
+                "success": True,
+
+                "message":
+                    "Foto-Import erfolgreich abgeschlossen.",
+
+                "returncode":
+                    result.returncode,
+
+                "import_result":
+                    import_result,
+
+                "log_file":
+                    log_file,
+
+                "output":
+                    stdout[-4000:]
+
+            })
+
+        # ====================================================
+        # IMPORT FEHLGESCHLAGEN
+        # ====================================================
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Importer beendet mit "
+                f"Exit-Code {result.returncode}",
+
+            "returncode":
+                result.returncode,
+
+            "import_result":
+                import_result,
+
+            "log_file":
+                log_file,
+
+            "output":
+                stdout[-2000:]
+                + "\n"
+                + stderr[-2000:]
+
+        }), 500
+
+    # ========================================================
+    # TIMEOUT
+    # ========================================================
+
+    except subprocess.TimeoutExpired:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Der Foto-Import läuft länger "
+                "als 30 Minuten."
+
+        }), 500
+
+    # ========================================================
+    # SONSTIGER FEHLER
+    # ========================================================
+
+    except Exception as ex:
+
+        return jsonify({
+
+            "success": False,
+
+            "error": str(ex)
+
+        }), 500
+
+
+# ============================================================
+# SCAN
+# ============================================================
 
 @app.route("/scan")
 def scan():
 
     cfg = Config.load()
 
-    #
-    # Scanner starten
-    #
-
     scanner = AlbumScanner()
-    
-    #
-    # Asset-Cache laden
-    #
 
     if AssetCache.exists():
 
         scanner.set_asset_index(
-
             AssetCache.get_index()
-
         )
 
     albums = scanner.scan(
-
         cfg["album_roots"]
-
     )
-
-    #
-    # Mit Immich vergleichen
-    #
 
     immich_ok = False
 
     try:
 
         api = Immich(
+
             cfg["immich"]["url"],
+
             cfg["immich"]["api_key"]
+
         )
 
         immich_ok = api.test_connection()
@@ -276,27 +677,27 @@ def scan():
     except Exception as ex:
 
         print(ex)
-    
 
-    #
-    # Nach Albumname sortieren
-    #
 
     albums = sorted(
+
         albums,
+
         key=lambda a: (
+
             a["album"].lower(),
+
             a["year"] or ""
+
         )
+
     )
 
-    #
-    # Cache-Informationen
-    #
 
     cache_info = AssetCache.info()
 
     cache_exists = cache_info["exists"]
+
 
     return render_template(
 
@@ -312,38 +713,30 @@ def scan():
 
     )
 
+
+# ============================================================
+# SYNCHRONISATION
+# ============================================================
+
 @app.route("/sync")
 def sync():
 
     cfg = Config.load()
 
-    #
-    # Immich
-    #
-
     api = Immich(
+
         cfg["immich"]["url"],
+
         cfg["immich"]["api_key"]
+
     )
 
-    #
-    # Asset-Cache aktualisieren
-    #
-
     asset_index = api.get_asset_index()
-    
+
     AssetCache.save(asset_index)
 
-    #
-    # Report
-    #
-
     report = SyncReport()
-    
-    #
-    # Scanner
-    #
-    
+
     scanner = AlbumScanner()
 
     scanner.set_asset_index(asset_index)
@@ -360,33 +753,17 @@ def sync():
 
     )
 
-    #
-    # Vergleich
-    #
-    
     albums = sync.compare(albums)
-    
-    albums = sync.prepare_assets(albums)
 
-    #
-    # Fehlende Alben erzeugen
-    #
+    albums = sync.prepare_assets(albums)
 
     created = sync.create_missing_albums(
         albums
     )
 
-    #
-    # Fehlende Assets ergänzen
-    #
-
     updated = sync.update_existing_albums(
         albums
     )
-    
-    #
-    # Berichtsordner anlegen
-    #
 
     report_dir = "/config/reports"
 
@@ -395,17 +772,9 @@ def sync():
         exist_ok=True
     )
 
-    #
-    # Zeitstempel erzeugen
-    #
-
     timestamp = datetime.now().strftime(
         "%Y-%m-%d_%H-%M-%S"
     )
-
-    #
-    # HTML erzeugen
-    #
 
     html = render_template(
 
@@ -414,10 +783,6 @@ def sync():
         report=report.to_dict()
 
     )
-
-    #
-    # HTML speichern
-    #
 
     with open(
 
@@ -438,8 +803,11 @@ def sync():
     with open(
 
         os.path.join(
+
             report_dir,
+
             f"{timestamp}_sync_report.html"
+
         ),
 
         "w",
@@ -450,9 +818,6 @@ def sync():
 
         f.write(html)
 
-    #
-    # TXT speichern
-    #
 
     report.save(
 
@@ -466,49 +831,15 @@ def sync():
     report.save(
 
         os.path.join(
+
             report_dir,
+
             f"{timestamp}_sync_report.txt"
+
         )
 
     )
-    
-    #
-    # Alte Reports löschen
-    #
 
-    html_reports = sorted(
-
-        glob.glob(
-
-            os.path.join(
-                report_dir,
-                "*_sync_report.html"
-            )
-
-        ),
-
-        key=os.path.getmtime,
-
-        reverse=True
-
-    )
-
-    txt_reports = sorted(
-
-        glob.glob(
-
-            os.path.join(
-                report_dir,
-                "*_sync_report.txt"
-            )
-
-        ),
-
-        key=os.path.getmtime,
-
-        reverse=True
-
-    )
 
     return render_template(
 
@@ -517,29 +848,53 @@ def sync():
         report=report.to_dict()
 
     )
-    
+
+
+# ============================================================
+# ALBUM-REGEL
+# ============================================================
+
 @app.route("/set_rule", methods=["POST"])
 def set_rule_route():
 
     data = request.get_json()
 
     album = data.get("album")
-    auto_add = data.get("auto_add", True)
+
+    auto_add = data.get(
+        "auto_add",
+        False
+    )
 
     if not album:
+
         return jsonify({
+
             "success": False,
+
             "error": "Album fehlt"
+
         }), 400
 
+
     AlbumRules.set(
+
         album,
+
         auto_add=auto_add
+
     )
 
     return jsonify({
+
         "success": True
+
     })
+
+
+# ============================================================
+# IMMICH TEST
+# ============================================================
 
 @app.route("/test")
 def test():
@@ -547,16 +902,26 @@ def test():
     cfg = Config.load()
 
     api = Immich(
+
         cfg["immich"]["url"],
+
         cfg["immich"]["api_key"]
+
     )
 
     ok = api.test_connection()
 
     return {
+
         "connected": ok
+
     }
-    
+
+
+# ============================================================
+# ASSET CACHE
+# ============================================================
+
 @app.route("/build_cache")
 def build_cache():
 
@@ -565,11 +930,12 @@ def build_cache():
     api = Immich(
 
         cfg["immich"]["url"],
+
         cfg["immich"]["api_key"]
 
     )
 
-    cache = api.get_asset_index()
+    cache = api.get_asset_index(force=True)
 
     AssetCache.save(cache)
 
@@ -580,7 +946,12 @@ def build_cache():
         "assets": len(cache)
 
     }
-    
+
+
+# ============================================================
+# API PROBE
+# ============================================================
+
 @app.route("/probe")
 def probe():
 
@@ -597,55 +968,16 @@ def probe():
     return api.api_probe()
 
 
+# ============================================================
+# SYNCHRONISATIONSBERICHTE
+# ============================================================
+
 @app.route("/reports")
 def reports():
 
-    report_dir = "/config/reports"
-
-    #
-    # Nur echte zeitgestempelte Reports berücksichtigen.
-    # last_sync_report.html wird bewusst ausgeschlossen.
-    #
-
-    pattern = os.path.join(
-        report_dir,
-        "????-??-??_??-??-??_sync_report.html"
+    files = get_report_files(
+        limit=1000
     )
-
-    reports = sorted(
-        glob.glob(pattern),
-        key=os.path.getmtime,
-        reverse=True
-    )
-
-    files = []
-
-    for file in reports[:3]:
-
-        name = os.path.basename(file)
-
-        stamp = name[:19]
-
-        try:
-
-            dt = datetime.strptime(
-                stamp,
-                "%Y-%m-%d_%H-%M-%S"
-            )
-
-        except ValueError:
-
-            continue
-
-        files.append({
-
-            "file": name,
-
-            "display": dt.strftime(
-                "%d.%m.%Y %H:%M:%S"
-            )
-
-        })
 
     return render_template(
 
@@ -654,7 +986,8 @@ def reports():
         reports=files
 
     )
-    
+
+
 @app.route("/report/<filename>")
 def report(filename):
 
@@ -665,71 +998,220 @@ def report(filename):
         filename
 
     )
-    
-@app.route("/cleanup_reports")
-def cleanup_reports():
+
+
+# ============================================================
+# IMPORT-REPORT
+# ============================================================
+
+@app.route("/import_report/<filename>")
+def import_report(filename):
 
     report_dir = "/config/reports"
 
-    #
-    # HTML
-    #
+    filepath = os.path.join(
+        report_dir,
+        filename
+    )
 
-    html_reports = sorted(
+    if not os.path.isfile(filepath):
 
-        glob.glob(
+        return (
+            "Importbericht nicht gefunden.",
+            404
+        )
 
-            os.path.join(
-                report_dir,
-                "*_sync_report.html"
-            )
+    try:
 
-        ),
+        with open(
+            filepath,
+            "r",
+            encoding="utf-8"
+        ) as f:
 
-        key=os.path.getmtime,
+            report = json.load(f)
 
-        reverse=True
+    except Exception as ex:
+
+        return (
+            f"Importbericht konnte nicht gelesen werden: {ex}",
+            500
+        )
+
+    return render_template(
+        "import_report.html",
+        report=report,
+        filename=filename
+    )
+
+
+@app.route("/import_reports")
+def import_reports():
+
+    reports = get_import_report_files(
+        limit=1000
+    )
+
+    return render_template(
+
+        "import_reports.html",
+
+        reports=reports
 
     )
 
-    #
-    # TXT
-    #
 
-    txt_reports = sorted(
+# ============================================================
+# IMPORT-LOG
+#
+# Nicht als Datei ausliefern!
+#
+# Stattdessen wird eine HTML-Seite erzeugt.
+# ============================================================
 
-        glob.glob(
+@app.route("/import_log/<filename>")
+def import_log(filename):
 
-            os.path.join(
-                report_dir,
-                "*_sync_report.txt"
-            )
+    log_dir = "/logs/family-photo-importer"
 
-        ),
+    filepath = os.path.join(
+        log_dir,
+        filename
+    )
 
-        key=os.path.getmtime,
+    if not os.path.isfile(filepath):
 
-        reverse=True
+        return (
+            "Import-Log nicht gefunden.",
+            404
+        )
+
+    try:
+
+        with open(
+            filepath,
+            "r",
+            encoding="utf-8",
+            errors="replace"
+        ) as f:
+
+            log_content = f.read()
+
+    except Exception as ex:
+
+        return (
+            f"Import-Log konnte nicht gelesen werden: {ex}",
+            500
+        )
+
+    return render_template(
+        "import_log.html",
+        filename=filename,
+        log_content=log_content
+    )
+
+
+# ============================================================
+# IMPORT-LOGS
+# ============================================================
+
+@app.route("/import_logs")
+def import_logs():
+
+    logs = get_import_log_files(
+        limit=1000
+    )
+
+    return render_template(
+
+        "import_logs.html",
+
+        logs=logs
 
     )
 
-    #
-    # alles außer den letzten 3 löschen
-    #
 
-    for file in html_reports[3:]:
+# ============================================================
+# BERICHT-BEREINIGUNG
+# ============================================================
 
-        if os.path.exists(file):
+def cleanup_files(pattern, keep=3):
+    files = sorted(
+        glob.glob(pattern),
+        key=os.path.getmtime,
+        reverse=True
+    )
 
+    deleted = 0
+
+    for file in files[keep:]:
+        try:
             os.remove(file)
+            deleted += 1
+        except OSError as ex:
+            print(
+                f"Fehler beim Löschen von {file}: {ex}"
+            )
 
-    for file in txt_reports[3:]:
+    return deleted
 
-        if os.path.exists(file):
 
-            os.remove(file)
+@app.route("/cleanup_reports")
+def cleanup_reports():
+    report_dir = "/config/reports"
+
+    deleted_html = cleanup_files(
+        os.path.join(
+            report_dir,
+            "????-??-??_??-??-??_sync_report.html"
+        ),
+        keep=3
+    )
+
+    deleted_txt = cleanup_files(
+        os.path.join(
+            report_dir,
+            "????-??-??_??-??-??_sync_report.txt"
+        ),
+        keep=3
+    )
 
     return redirect("/")
+
+
+@app.route("/cleanup_import_reports")
+def cleanup_import_reports():
+    report_dir = "/config/reports"
+
+    deleted = cleanup_files(
+        os.path.join(
+            report_dir,
+            "????-??-??_??-??-??_import_report.json"
+        ),
+        keep=3
+    )
+
+    return redirect("/")
+
+
+@app.route("/cleanup_import_logs")
+def cleanup_import_logs():
+    log_dir = "/logs/family-photo-importer"
+
+    deleted = cleanup_files(
+        os.path.join(
+            log_dir,
+            "import-????-??-??.log"
+        ),
+        keep=3
+    )
+
+    return redirect("/")
+
+
+# ============================================================
+# INFO
+# ============================================================
 
 @app.route("/info")
 def info():
@@ -737,11 +1219,18 @@ def info():
     return render_template(
         "info.html"
     )
-    
+
+
+# ============================================================
+# START
+# ============================================================
 
 if __name__ == "__main__":
 
     app.run(
+
         host="0.0.0.0",
+
         port=5050
+
     )

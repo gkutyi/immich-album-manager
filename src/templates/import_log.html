@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Fotoimport-Log</title>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}"
+>
+
+<style>
+
+.log-container {
+
+    background: #111;
+
+    color: #eee;
+
+    padding: 15px;
+
+    border-radius: 6px;
+
+    overflow-x: auto;
+
+    white-space: pre-wrap;
+
+    font-family:
+        monospace;
+
+    font-size: 13px;
+
+    line-height: 1.4;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+{% include "_menu.html" %}
+
+<div class="card">
+
+<h2>Fotoimport-Log</h2>
+
+<p>
+<strong>Datei:</strong>
+{{ filename }}
+</p>
+
+<hr>
+
+<div class="log-container">{{ log_content }}</div>
+
+<br>
+
+<a
+    class="button"
+    href="/"
+>
+Zur Startseite
+</a>
+
+</div>
+
+{% include "_footer.html" %}
+
+</body>
+
+</html>
